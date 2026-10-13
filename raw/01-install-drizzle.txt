@@ -1,0 +1,5 @@
+
+added 36 packages in 6s
+environment: line 2: bc: command not found
+install_seconds=
+94M	node_modules

@@ -1,0 +1,13 @@
+PRIMARY:5432 drizzle  TX_reply      4 stmt(s): begin | select "id", "parent_id" from "comments" wher | insert into "comments" ("id", "tenant_id", "p | commit
+PRIMARY:5432 drizzle  WRITE_insert  1 stmt(s): insert into "comments" ("id", "tenant_id", "p
+PRIMARY:5432 mikro    TX_reply      4 stmt(s): begin | select "c0"."id", "c0"."parent_id" from "comm | insert into "comments" ("id", "tenant_id", "p | commit
+PRIMARY:5432 mikro    WRITE_insert  4 stmt(s): select 1 from pg_database where datname = 'b_ | begin | insert into "comments" ("id", "tenant_id", "p | commit
+PRIMARY:5432 prisma   TX_reply      4 stmt(s): BEGIN | SELECT "public"."comments"."id", "public"."co | INSERT INTO "public"."comments" ("id","tenant | COMMIT
+PRIMARY:5432 prisma   WRITE_insert  1 stmt(s): INSERT INTO "public"."comments" ("id","tenant
+REPLICA:5433 drizzle  READ_page     1 stmt(s): select "id", "union_id", "content", "created_
+REPLICA:5433 drizzle  READ_stats    1 stmt(s): select "status", count(*), avg("popularity_sc
+REPLICA:5433 mikro    READ_page     1 stmt(s): select "c0"."id", "c0"."union_id", "c0"."cont
+REPLICA:5433 mikro    READ_stats    1 stmt(s): select "c"."status", count(*) as n, avg(c.pop
+REPLICA:5433 prisma   READ_page     1 stmt(s): SELECT "public"."comments"."id", "public"."co
+REPLICA:5433 prisma   READ_stats    1 stmt(s): SELECT COUNT(*) AS "_count$_all", AVG("public
+(note: MikroORM did not forward application_name from clientUrl, so its sessions show as [unknown]; only MikroORM ran unlabeled sessions.)

@@ -1,0 +1,1 @@
+-- Custom SQL migration file, put your code below! --UPDATE "comments" SET "status"='deleted' WHERE "deleted_at" IS NOT NULL;

@@ -1,0 +1,62 @@
+### cold incremental
+Files:                         781
+Lines of Library:            51766
+Lines of Definitions:        98876
+Lines of TypeScript:          1653
+Lines of JavaScript:             0
+Lines of JSON:                   0
+Lines of Other:                  0
+Identifiers:                177299
+Symbols:                    300010
+Types:                       73027
+Instantiations:             759547
+Memory used:               343812K
+Assignability cache size:    70754
+Identity cache size:          2039
+Subtype cache size:            538
+Strict subtype cache size:      15
+I/O Read time:               0.03s
+Parse time:                  0.40s
+ResolveModule time:          0.07s
+ResolveTypeReference time:   0.00s
+ResolveLibrary time:         0.01s
+Program time:                0.61s
+Bind time:                   0.17s
+Check time:                  1.80s
+I/O Write time:              0.00s
+printTime time:              0.01s
+Emit time:                   0.01s
+Total time:                  2.59s
+exit=0
+### after 1-line edit in queries.ts
+Files:                         781
+Lines of Library:            51766
+Lines of Definitions:        98876
+Lines of TypeScript:          1654
+Lines of JavaScript:             0
+Lines of JSON:                   0
+Lines of Other:                  0
+Identifiers:                177299
+Symbols:                    299630
+Types:                       72951
+Instantiations:             760363
+Memory used:               387096K
+Assignability cache size:    70754
+Identity cache size:          2039
+Subtype cache size:            538
+Strict subtype cache size:      15
+I/O Read time:               0.04s
+Parse time:                  0.32s
+ResolveModule time:          0.05s
+ResolveTypeReference time:   0.00s
+ResolveLibrary time:         0.01s
+Program time:                0.52s
+Bind time:                   0.16s
+transformTime time:          1.84s
+commentTime time:            0.01s
+printTime time:              1.93s
+Emit time:                   1.93s
+Check time:                  0.08s
+I/O Write time:              0.00s
+Total time:                  2.69s
+exit=0

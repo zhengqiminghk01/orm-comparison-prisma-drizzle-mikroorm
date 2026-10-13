@@ -1,0 +1,8 @@
+59 |   @@index([status, createdAt])
+60 |   @@unique([tenantId, unionId, nonce], where: raw("nonce IS NOT NULL"))
+   | 
+
+Validation Error Count: 1
+[Context: validate]
+
+Prisma CLI Version : 7.10.0

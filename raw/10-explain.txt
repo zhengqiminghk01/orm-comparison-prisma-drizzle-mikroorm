@@ -1,0 +1,48 @@
+=== OR form (what all 3 ORMs generate in this test)
+                                                                                                                                      QUERY PLAN                                                                                                                                       
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.55..7.47 rows=21 width=24) (actual time=29.667..29.680 rows=21 loops=1)
+   Buffers: shared hit=6657
+   ->  Index Scan Backward using comments_tenant_id_parent_id_created_at_id_index on comments  (cost=0.55..54798.95 rows=166244 width=24) (actual time=29.663..29.672 rows=21 loops=1)
+         Index Cond: ((tenant_id = '00000000-0000-7000-8000-000000000001'::uuid) AND (parent_id = '00000000-0000-7000-9000-000000000000'::uuid))
+         Filter: ((deleted_at IS NULL) AND (status = 'public'::comment_status) AND ((created_at < '2026-09-25 06:47:40+08'::timestamp with time zone) OR ((created_at = '2026-09-25 06:47:40+08'::timestamp with time zone) AND (id < '8f0a0a9c-9307-424f-82a5-aa24e5201f97'::uuid))))
+         Rows Removed by Filter: 98798
+         Buffers: shared hit=6657
+ Planning:
+   Buffers: shared hit=243
+ Planning Time: 0.834 ms
+ Execution Time: 29.715 ms
+(11 rows)
+
+=== row-value form
+                                                                                                                                    QUERY PLAN                                                                                                                                     
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.55..7.07 rows=21 width=24) (actual time=0.107..0.120 rows=21 loops=1)
+   Buffers: shared hit=6 read=1
+   ->  Index Scan Backward using comments_tenant_id_parent_id_created_at_id_index on comments  (cost=0.55..51621.44 rows=166244 width=24) (actual time=0.106..0.116 rows=21 loops=1)
+         Index Cond: ((tenant_id = '00000000-0000-7000-8000-000000000001'::uuid) AND (parent_id = '00000000-0000-7000-9000-000000000000'::uuid) AND (ROW(created_at, id) < ROW('2026-09-25 06:47:40+08'::timestamp with time zone, '8f0a0a9c-9307-424f-82a5-aa24e5201f97'::uuid)))
+         Filter: ((deleted_at IS NULL) AND (status = 'public'::comment_status))
+         Rows Removed by Filter: 1
+         Buffers: shared hit=6 read=1
+ Planning:
+   Buffers: shared hit=10
+ Planning Time: 0.223 ms
+ Execution Time: 0.154 ms
+(11 rows)
+
+=== OR form + redundant created_at <= cursor (expressible in all 3 query APIs)
+                                                                                                                                      QUERY PLAN                                                                                                                                       
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.55..7.94 rows=21 width=24) (actual time=0.042..0.052 rows=21 loops=1)
+   Buffers: shared hit=7
+   ->  Index Scan Backward using comments_tenant_id_parent_id_created_at_id_index on comments  (cost=0.55..52948.70 rows=150540 width=24) (actual time=0.041..0.049 rows=21 loops=1)
+         Index Cond: ((tenant_id = '00000000-0000-7000-8000-000000000001'::uuid) AND (parent_id = '00000000-0000-7000-9000-000000000000'::uuid) AND (created_at <= '2026-09-25 06:47:40+08'::timestamp with time zone))
+         Filter: ((deleted_at IS NULL) AND (status = 'public'::comment_status) AND ((created_at < '2026-09-25 06:47:40+08'::timestamp with time zone) OR ((created_at = '2026-09-25 06:47:40+08'::timestamp with time zone) AND (id < '8f0a0a9c-9307-424f-82a5-aa24e5201f97'::uuid))))
+         Rows Removed by Filter: 2
+         Buffers: shared hit=7
+ Planning:
+   Buffers: shared hit=259
+ Planning Time: 0.577 ms
+ Execution Time: 0.077 ms
+(11 rows)
+

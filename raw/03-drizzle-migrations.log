@@ -1,0 +1,150 @@
+=== m1_add_language
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+5 tables
+accounts 9 columns 0 indexes 0 fks
+comment_media 12 columns 1 indexes 1 fks
+comments 13 columns 5 indexes 2 fks
+tenant_settings 9 columns 0 indexes 1 fks
+tenants 6 columns 0 indexes 0 fks
+
+[✓] Your SQL migration file ➜ drizzle/0001_m1_add_language.sql 🚀
+exit=0
+--- SQL
+ALTER TABLE "accounts" ADD COLUMN "language" smallint DEFAULT 1 NOT NULL;
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[2K[1G[✓] migrations applied successfully!migrate exit=0
+=== m2_unique_to_index
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+5 tables
+accounts 9 columns 0 indexes 0 fks
+comment_media 12 columns 1 indexes 1 fks
+comments 13 columns 5 indexes 2 fks
+tenant_settings 9 columns 0 indexes 1 fks
+tenants 6 columns 0 indexes 0 fks
+
+[✓] Your SQL migration file ➜ drizzle/0002_m2_unique_to_index.sql 🚀
+exit=0
+--- SQL
+DROP INDEX "comment_media_comment_id_sort_order_index";--> statement-breakpoint
+CREATE INDEX "comment_media_comment_id_sort_order_index" ON "comment_media" USING btree ("comment_id","sort_order");
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[2K[1G[✓] migrations applied successfully!migrate exit=0
+=== m3_add_index
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+5 tables
+accounts 9 columns 1 indexes 0 fks
+comment_media 12 columns 1 indexes 1 fks
+comments 13 columns 5 indexes 2 fks
+tenant_settings 9 columns 0 indexes 1 fks
+tenants 6 columns 0 indexes 0 fks
+
+[✓] Your SQL migration file ➜ drizzle/0003_m3_add_index.sql 🚀
+exit=0
+--- SQL
+CREATE INDEX "accounts_created_at_index" ON "accounts" USING btree ("created_at");
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[2K[1G[✓] migrations applied successfully!migrate exit=0
+=== m4_rename
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+Error: Interactive prompts require a TTY terminal (process.stdin.isTTY or process.stdout.isTTY is false). This can happen when running in CI, piped input, or non-interactive shells.
+    at render10 (./drizzle/node_modules/drizzle-kit/bin.cjs:1450:31)
+    at promptColumnsConflicts (./drizzle/node_modules/drizzle-kit/bin.cjs:32711:65)
+    at columnsResolver (./drizzle/node_modules/drizzle-kit/bin.cjs:32146:28)
+    at applyPgSnapshotsDiff (./drizzle/node_modules/drizzle-kit/bin.cjs:28228:73)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async prepareAndMigratePg (./drizzle/node_modules/drizzle-kit/bin.cjs:32191:42)
+    at async Object.handler (./drizzle/node_modules/drizzle-kit/bin.cjs:91998:7)
+    at async run (./drizzle/node_modules/drizzle-kit/bin.cjs:91472:7)
+exit=0
+=== m4_rename (via pty, choosing 'rename' in the interactive prompt)
+Traceback (most recent call last):
+  File "/tmp/pty.py", line 1, in <module>
+    import pty,os,sys,time,select
+  File "/tmp/pty.py", line 2, in <module>
+    pid,fd=pty.fork()
+           ^^^^^^^^
+AttributeError: module 'pty' has no attribute 'fork' (consider renaming '/tmp/pty.py' since it has the same name as the standard library module named 'pty' and prevents importing that standard library module)
+--- SQL
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[2K[1G[✓] migrations applied successfully!=== m5_enum_backfill
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+Error: Interactive prompts require a TTY terminal (process.stdin.isTTY or process.stdout.isTTY is false). This can happen when running in CI, piped input, or non-interactive shells.
+    at render10 (./drizzle/node_modules/drizzle-kit/bin.cjs:1450:31)
+    at promptColumnsConflicts (./drizzle/node_modules/drizzle-kit/bin.cjs:32711:65)
+    at columnsResolver (./drizzle/node_modules/drizzle-kit/bin.cjs:32146:28)
+    at applyPgSnapshotsDiff (./drizzle/node_modules/drizzle-kit/bin.cjs:28228:73)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async prepareAndMigratePg (./drizzle/node_modules/drizzle-kit/bin.cjs:32191:42)
+    at async Object.handler (./drizzle/node_modules/drizzle-kit/bin.cjs:91998:7)
+    at async run (./drizzle/node_modules/drizzle-kit/bin.cjs:91472:7)
+--- generated
+=== (note: previous attempt failed due to my script name clash; retrying) m4_rename via pty
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+[?25l
+Is nickname column in accounts table created or renamed from another column?
+❯ + nickname                    create column
+  ~ display_username › nickname rename column[2K[1G
+Is nickname column in accounts table created or renamed from another column?
+  + nickname                    create column
+❯ ~ display_username › nickname rename column[2K[1G
+[?25h~ display_username › nickname column will be renamed
+--- all columns conflicts in accounts table resolved ---
+
+5 tables
+accounts 9 columns 1 indexes 0 fks
+comment_media 12 columns 1 indexes 1 fks
+comments 13 columns 5 indexes 2 fks
+tenant_settings 9 columns 0 indexes 1 fks
+tenants 6 columns 0 indexes 0 fks
+
+[✓] Your SQL migration file ➜ drizzle/0004_m4_rename.sql 🚀
+--- SQL
+ALTER TABLE "accounts" RENAME COLUMN "display_username" TO "nickname";
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[2K[1G[✓] migrations applied successfully! 1        | alice
+ 2        | bob
+
+=== m5_enum_backfill
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+5 tables
+accounts 9 columns 1 indexes 0 fks
+comment_media 12 columns 1 indexes 1 fks
+comments 13 columns 5 indexes 2 fks
+tenant_settings 9 columns 0 indexes 1 fks
+tenants 6 columns 0 indexes 0 fks
+
+[✓] Your SQL migration file ➜ drizzle/0005_m5_enum_backfill.sql 🚀
+--- generated
+ALTER TYPE "public"."comment_status" ADD VALUE 'deleted';
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[2K[1G[⣷] applying migrations...migrate exit=1
+--- re-run via programmatic migrate() to see the error
+ERROR: unsafe use of new value "deleted" of enum type comment_status
+--- workaround: keep enum change only, backfill in separate custom migration
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+Prepared empty file for your custom SQL migration!
+[✓] Your SQL migration file ➜ drizzle/0006_m5b_backfill.sql 🚀
+ok
+ {pending,hidden,public,deleted}
+

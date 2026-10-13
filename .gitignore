@@ -1,0 +1,7 @@
+node_modules/
+dist/
+prisma/src/generated/
+*.log.tmp
+.env
+confluence/media.json
+.env*

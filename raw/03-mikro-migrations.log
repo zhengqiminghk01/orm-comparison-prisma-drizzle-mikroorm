@@ -1,0 +1,362 @@
+=== m1_add_language
+Migration20261012103325_m1_add_language.ts successfully created
+exit=0
+--- file migrations/Migration20261012103325_m1_add_language.ts
+import { Migration } from '@mikro-orm/migrations';
+
+export class Migration20261012103325_m1_add_language extends Migration {
+
+  override name = 'Migration20261012103325_m1_add_language';
+
+  override up(): void | Promise<void> {
+    this.addSql(`alter table "accounts" add "language" smallint not null default 1;`);
+
+    this.addSql(`drop index "comments_nonce_uk";`);
+    this.addSql(`drop index "comments_popular_idx";`);
+    this.addSql(`create index "comments_popular_idx" on "comments" ("tenant_id","parent_id","popularity_score" desc,"id");`);
+    this.addSql(`create unique index "comments_nonce_uk" on "comments" ("tenant_id","union_id","nonce") where "nonce" is not null;`);
+  }
+
+  override down(): void | Promise<void> {
+    this.addSql(`alter table "accounts" drop column "language";`);
+
+    this.addSql(`drop index "comments_index";`);
+    this.addSql(`drop index "comments_unique";`);
+    this.addSql(`create unique index "comments_nonce_uk" on "comments" ("tenant_id", "union_id", "nonce") where nonce IS NOT NULL;`);
+    this.addSql(`create index "comments_popular_idx" on "comments" ("tenant_id", "parent_id", "popularity_score" DESC, "id");`);
+  }
+
+}
+[migrator] Processing 'Migration20261012103325_m1_add_language'
+[migrator] Applied 'Migration20261012103325_m1_add_language'
+Successfully migrated up to the latest version
+up exit=0
+=== m2_unique_to_index
+Migration20261012103327_m2_unique_to_index.ts successfully created
+exit=0
+--- file migrations/Migration20261012103327_m2_unique_to_index.ts
+import { Migration } from '@mikro-orm/migrations';
+
+export class Migration20261012103327_m2_unique_to_index extends Migration {
+
+  override name = 'Migration20261012103327_m2_unique_to_index';
+
+  override up(): void | Promise<void> {
+    this.addSql(`drop index "comments_nonce_uk";`);
+    this.addSql(`drop index "comments_popular_idx";`);
+    this.addSql(`create index "comments_popular_idx" on "comments" ("tenant_id","parent_id","popularity_score" desc,"id");`);
+    this.addSql(`create unique index "comments_nonce_uk" on "comments" ("tenant_id","union_id","nonce") where "nonce" is not null;`);
+
+    this.addSql(`alter table "comment_media" drop constraint "comment_media_comment_id_sort_order_unique";`);
+    this.addSql(`create index "comment_media_comment_id_sort_order_index" on "comment_media" ("comment_id", "sort_order");`);
+  }
+
+  override down(): void | Promise<void> {
+    this.addSql(`drop index "comment_media_comment_id_sort_order_index";`);
+    this.addSql(`alter table "comment_media" add constraint "comment_media_comment_id_sort_order_unique" unique ("comment_id", "sort_order");`);
+
+    this.addSql(`drop index "comments_index";`);
+    this.addSql(`drop index "comments_unique";`);
+    this.addSql(`create unique index "comments_nonce_uk" on "comments" ("tenant_id", "union_id", "nonce") where nonce IS NOT NULL;`);
+    this.addSql(`create index "comments_popular_idx" on "comments" ("tenant_id", "parent_id", "popularity_score" DESC, "id");`);
+  }
+
+}
+[migrator] Processing 'Migration20261012103327_m2_unique_to_index'
+[migrator] Applied 'Migration20261012103327_m2_unique_to_index'
+Successfully migrated up to the latest version
+up exit=0
+=== m3_add_index
+Migration20261012103329_m3_add_index.ts successfully created
+exit=0
+--- file migrations/Migration20261012103329_m3_add_index.ts
+import { Migration } from '@mikro-orm/migrations';
+
+export class Migration20261012103329_m3_add_index extends Migration {
+
+  override name = 'Migration20261012103329_m3_add_index';
+
+  override up(): void | Promise<void> {
+    this.addSql(`create index "accounts_created_at_index" on "accounts" ("created_at");`);
+
+    this.addSql(`drop index "comments_nonce_uk";`);
+    this.addSql(`drop index "comments_popular_idx";`);
+    this.addSql(`create index "comments_popular_idx" on "comments" ("tenant_id","parent_id","popularity_score" desc,"id");`);
+    this.addSql(`create unique index "comments_nonce_uk" on "comments" ("tenant_id","union_id","nonce") where "nonce" is not null;`);
+  }
+
+  override down(): void | Promise<void> {
+    this.addSql(`drop index "accounts_created_at_index";`);
+
+    this.addSql(`drop index "comments_index";`);
+    this.addSql(`drop index "comments_unique";`);
+    this.addSql(`create unique index "comments_nonce_uk" on "comments" ("tenant_id", "union_id", "nonce") where nonce IS NOT NULL;`);
+    this.addSql(`create index "comments_popular_idx" on "comments" ("tenant_id", "parent_id", "popularity_score" DESC, "id");`);
+  }
+
+}
+[migrator] Processing 'Migration20261012103329_m3_add_index'
+[migrator] Applied 'Migration20261012103329_m3_add_index'
+Successfully migrated up to the latest version
+up exit=0
+=== m4_rename
+Migration20261012103330_m4_rename.ts successfully created
+exit=0
+--- file migrations/Migration20261012103330_m4_rename.ts
+import { Migration } from '@mikro-orm/migrations';
+
+export class Migration20261012103330_m4_rename extends Migration {
+
+  override name = 'Migration20261012103330_m4_rename';
+
+  override up(): void | Promise<void> {
+    this.addSql(`alter table "accounts" rename column "display_username" to "nickname";`);
+
+    this.addSql(`drop index "comments_nonce_uk";`);
+    this.addSql(`drop index "comments_popular_idx";`);
+    this.addSql(`create index "comments_popular_idx" on "comments" ("tenant_id","parent_id","popularity_score" desc,"id");`);
+    this.addSql(`create unique index "comments_nonce_uk" on "comments" ("tenant_id","union_id","nonce") where "nonce" is not null;`);
+  }
+
+  override down(): void | Promise<void> {
+    this.addSql(`alter table "accounts" rename column "nickname" to "display_username";`);
+
+    this.addSql(`drop index "comments_index";`);
+    this.addSql(`drop index "comments_unique";`);
+    this.addSql(`create unique index "comments_nonce_uk" on "comments" ("tenant_id", "union_id", "nonce") where nonce IS NOT NULL;`);
+    this.addSql(`create index "comments_popular_idx" on "comments" ("tenant_id", "parent_id", "popularity_score" DESC, "id");`);
+  }
+
+}
+[migrator] Processing 'Migration20261012103330_m4_rename'
+[migrator] Applied 'Migration20261012103330_m4_rename'
+Successfully migrated up to the latest version
+up exit=0
+ 1        | alice
+ 2        | bob
+
+=== rollback test: migration:down (m4)
+[migrator] Processing 'Migration20261012103330_m4_rename'
+mikro-orm migration:down
+
+Migrate one step down
+
+Options:
+      --config                  Set path to the ORM configuration file   [array]
+      --contextName, --context  Set name of config to load out of the ORM config
+                                uration file. Used when config file exports an a
+                                rray or a function [string] [default: "default"]
+  -q, --quiet                   Do not show any auxiliary output.
+                                                      [boolean] [default: false]
+  -t, --to                      Migrate down to specific version        [string]
+  -f, --from                    Start migration from specific version   [string]
+  -o, --only                    Migrate only specified versions         [string]
+  -s, --schema                  Target schema to run the migration against (Post
+                                greSQL, MySQL, Oracle)                  [string]
+  -v, --version                 Show version number                    [boolean]
+  -h, --help                    Show help                              [boolean]
+
+DriverException: index "comments_index" does not exist
+    at PostgreSqlExceptionConverter.convertException (./mikro/node_modules/@mikro-orm/core/platforms/ExceptionConverter.js:6:16)
+    at PostgreSqlExceptionConverter.convertException (./mikro/node_modules/@mikro-orm/sql/dialects/postgresql/PostgreSqlExceptionConverter.js:52:22)
+    at PostgreSqlDriver.convertException (./mikro/node_modules/@mikro-orm/core/drivers/DatabaseDriver.js:615:54)
+    at <anonymous> (./mikro/node_modules/@mikro-orm/core/drivers/DatabaseDriver.js:619:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async Utils.runSerial (./mikro/node_modules/@mikro-orm/core/utils/Utils.js:647:22)
+    at async #connection.transactional.ctx (./mikro/node_modules/@mikro-orm/migrations/MigrationRunner.js:35:21)
+    at async PostgreSqlConnection.transactional (./mikro/node_modules/@mikro-orm/sql/AbstractSqlConnection.js:120:25)
+    at async MigrationRunner.run (./mikro/node_modules/@mikro-orm/migrations/MigrationRunner.js:31:13)
+    at async createMigrationHandler (./mikro/node_modules/@mikro-orm/core/utils/AbstractMigrator.js:349:13)
+
+    at ./mikro/node_modules/pg/lib/client.js:694:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async PostgresConnection.executeQuery (./mikro/node_modules/kysely/dist/dialect/postgres/postgres-driver.js:113:28)
+    at async <anonymous> (./mikro/node_modules/kysely/dist/query-executor/query-executor-base.js:39:24)
+    at async SingleConnectionProvider.#run (./mikro/node_modules/kysely/dist/driver/single-connection-provider.js:24:16)
+    at async DefaultQueryExecutor.executeQuery (./mikro/node_modules/kysely/dist/query-executor/query-executor-base.js:38:28)
+    at async ControlledTransaction.executeQuery (./mikro/node_modules/kysely/dist/kysely.js:535:16)
+    at async executeQuery (./mikro/node_modules/@mikro-orm/sql/AbstractSqlConnection.js:266:25)
+    at async PostgreSqlConnection.executeQuery (./mikro/node_modules/@mikro-orm/core/connections/Connection.js:210:25)
+    at async Utils.runSerial (./mikro/node_modules/@mikro-orm/core/utils/Utils.js:647:22)
+    at PostgresConnection.executeQuery (./mikro/node_modules/kysely/dist/dialect/postgres/postgres-driver.js:126:41)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async <anonymous> (./mikro/node_modules/kysely/dist/query-executor/query-executor-base.js:39:24)
+    at async SingleConnectionProvider.#run (./mikro/node_modules/kysely/dist/driver/single-connection-provider.js:24:16)
+    at async DefaultQueryExecutor.executeQuery (./mikro/node_modules/kysely/dist/query-executor/query-executor-base.js:38:28)
+    at async ControlledTransaction.executeQuery (./mikro/node_modules/kysely/dist/kysely.js:535:16)
+    at async executeQuery (./mikro/node_modules/@mikro-orm/sql/AbstractSqlConnection.js:266:25)
+    at async PostgreSqlConnection.executeQuery (./mikro/node_modules/@mikro-orm/core/connections/Connection.js:210:25)
+    at async Utils.runSerial (./mikro/node_modules/@mikro-orm/core/utils/Utils.js:647:22)
+    at async #connection.transactional.ctx (./mikro/node_modules/@mikro-orm/migrations/MigrationRunner.js:35:21) {
+  code: '42704',
+  errno: undefined,
+  sqlState: undefined,
+  sqlMessage: undefined,
+  errmsg: undefined,
+  length: 109,
+  severity: 'ERROR',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'tablecmds.c',
+  line: '1430',
+  routine: 'DropErrorMsgNonExistent'
+}
+down exit=1
+=== rollback test retry with index lines removed from down() (hand edit)
+[migrator] Processing 'Migration20261012103330_m4_rename'
+[migrator] Reverted 'Migration20261012103330_m4_rename'
+Successfully migrated down to previous version
+down exit=0
+ display_username
+
+[migrator] Processing 'Migration20261012103330_m4_rename'
+[migrator] Applied 'Migration20261012103330_m4_rename'
+Successfully migrated up to the latest version
+up exit=0
+=== m5_enum_backfill
+Migration20261012103342_m5_enum_backfill.ts successfully created
+import { Migration } from '@mikro-orm/migrations';
+
+export class Migration20261012103342_m5_enum_backfill extends Migration {
+
+  override name = 'Migration20261012103342_m5_enum_backfill';
+
+  override up(): void | Promise<void> {
+    this.addSql(`alter type "comment_status" add value if not exists 'deleted' after 'public';`);
+    this.addSql(`drop index "comments_nonce_uk";`);
+    this.addSql(`drop index "comments_popular_idx";`);
+    this.addSql(`create index "comments_popular_idx" on "comments" ("tenant_id","parent_id","popularity_score" desc,"id");`);
+    this.addSql(`create unique index "comments_nonce_uk" on "comments" ("tenant_id","union_id","nonce") where "nonce" is not null;`);
+
+    this.addSql(`alter type "comment_status" add value if not exists 'deleted' after 'public';`);
+  }
+
+  override down(): void | Promise<void> {
+    this.addSql(`drop index "comments_index";`);
+    this.addSql(`drop index "comments_unique";`);
+    this.addSql(`create unique index "comments_nonce_uk" on "comments" ("tenant_id", "union_id", "nonce") where nonce IS NOT NULL;`);
+    this.addSql(`create index "comments_popular_idx" on "comments" ("tenant_id", "parent_id", "popularity_score" DESC, "id");`);
+  }
+
+}
+[migrator] Processing 'Migration20261012103342_m5_enum_backfill'
+mikro-orm migration:up
+
+Migrate up to the latest version
+
+Options:
+      --config                  Set path to the ORM configuration file   [array]
+      --contextName, --context  Set name of config to load out of the ORM config
+                                uration file. Used when config file exports an a
+                                rray or a function [string] [default: "default"]
+  -q, --quiet                   Do not show any auxiliary output.
+                                                      [boolean] [default: false]
+  -t, --to                      Migrate up to specific version          [string]
+  -f, --from                    Start migration from specific version   [string]
+  -o, --only                    Migrate only specified versions         [string]
+  -s, --schema                  Target schema to run the migration against (Post
+                                greSQL, MySQL, Oracle)                  [string]
+  -v, --version                 Show version number                    [boolean]
+  -h, --help                    Show help                              [boolean]
+
+DriverException: unsafe use of new value "deleted" of enum type comment_status
+ - hint: New enum values must be committed before they can be used.
+    at PostgreSqlExceptionConverter.convertException (./mikro/node_modules/@mikro-orm/core/platforms/ExceptionConverter.js:6:16)
+    at PostgreSqlExceptionConverter.convertException (./mikro/node_modules/@mikro-orm/sql/dialects/postgresql/PostgreSqlExceptionConverter.js:52:22)
+    at PostgreSqlDriver.convertException (./mikro/node_modules/@mikro-orm/core/drivers/DatabaseDriver.js:615:54)
+    at <anonymous> (./mikro/node_modules/@mikro-orm/core/drivers/DatabaseDriver.js:619:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async Utils.runSerial (./mikro/node_modules/@mikro-orm/core/utils/Utils.js:647:22)
+    at async #connection.transactional.ctx (./mikro/node_modules/@mikro-orm/migrations/MigrationRunner.js:35:21)
+    at async PostgreSqlConnection.transactional (./mikro/node_modules/@mikro-orm/sql/AbstractSqlConnection.js:120:25)
+    at async MigrationRunner.run (./mikro/node_modules/@mikro-orm/migrations/MigrationRunner.js:31:13)
+    at async createMigrationHandler (./mikro/node_modules/@mikro-orm/core/utils/AbstractMigrator.js:349:13)
+
+    at ./mikro/node_modules/pg/lib/client.js:694:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async PostgresConnection.executeQuery (./mikro/node_modules/kysely/dist/dialect/postgres/postgres-driver.js:113:28)
+    at async <anonymous> (./mikro/node_modules/kysely/dist/query-executor/query-executor-base.js:39:24)
+    at async SingleConnectionProvider.#run (./mikro/node_modules/kysely/dist/driver/single-connection-provider.js:24:16)
+    at async DefaultQueryExecutor.executeQuery (./mikro/node_modules/kysely/dist/query-executor/query-executor-base.js:38:28)
+    at async ControlledTransaction.executeQuery (./mikro/node_modules/kysely/dist/kysely.js:535:16)
+    at async executeQuery (./mikro/node_modules/@mikro-orm/sql/AbstractSqlConnection.js:266:25)
+    at async PostgreSqlConnection.executeQuery (./mikro/node_modules/@mikro-orm/core/connections/Connection.js:210:25)
+    at async Utils.runSerial (./mikro/node_modules/@mikro-orm/core/utils/Utils.js:647:22)
+    at PostgresConnection.executeQuery (./mikro/node_modules/kysely/dist/dialect/postgres/postgres-driver.js:126:41)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async <anonymous> (./mikro/node_modules/kysely/dist/query-executor/query-executor-base.js:39:24)
+    at async SingleConnectionProvider.#run (./mikro/node_modules/kysely/dist/driver/single-connection-provider.js:24:16)
+    at async DefaultQueryExecutor.executeQuery (./mikro/node_modules/kysely/dist/query-executor/query-executor-base.js:38:28)
+    at async ControlledTransaction.executeQuery (./mikro/node_modules/kysely/dist/kysely.js:535:16)
+    at async executeQuery (./mikro/node_modules/@mikro-orm/sql/AbstractSqlConnection.js:266:25)
+    at async PostgreSqlConnection.executeQuery (./mikro/node_modules/@mikro-orm/core/connections/Connection.js:210:25)
+    at async Utils.runSerial (./mikro/node_modules/@mikro-orm/core/utils/Utils.js:647:22)
+    at async #connection.transactional.ctx (./mikro/node_modules/@mikro-orm/migrations/MigrationRunner.js:35:21) {
+  code: '55P04',
+  errno: undefined,
+  sqlState: undefined,
+  sqlMessage: undefined,
+  errmsg: undefined,
+  length: 186,
+  severity: 'ERROR',
+  detail: undefined,
+  hint: 'New enum values must be committed before they can be used.',
+  position: '32',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'enum.c',
+  line: '97',
+  routine: 'check_safe_enum_use'
+}
+up exit=1
+=== workaround: backfill moved to separate blank migration
+Migration20261012103348_m5b_backfill.ts successfully created
+import { Migration } from '@mikro-orm/migrations';
+
+export class Migration20261012103348_m5b_backfill extends Migration {
+
+  override name = 'Migration20261012103348_m5b_backfill';
+
+  override up(): void | Promise<void> {
+    this.addSql(`update "comments" set "status"='deleted' where "deleted_at" is not null;`);
+    this.addSql(`select 1`);
+  }
+
+  override down(): void | Promise<void> {
+    this.addSql(`select 1`);
+  }
+
+}
+[migrator] Processing 'Migration20261012103342_m5_enum_backfill'
+[migrator] Applied 'Migration20261012103342_m5_enum_backfill'
+[migrator] Processing 'Migration20261012103348_m5b_backfill'
+mikro-orm migration:up
+
+Migrate up to the latest version
+
+Options:
+exit=1
+=== run up in two steps: --to m5 then rest
+[migrator] Processing 'Migration20261012103342_m5_enum_backfill'
+[migrator] Applied 'Migration20261012103342_m5_enum_backfill'
+Successfully migrated up to version Migration20261012103342_m5_enum_backfill
+[migrator] Processing 'Migration20261012103348_m5b_backfill'
+[migrator] Applied 'Migration20261012103348_m5b_backfill'
+Successfully migrated up to the latest version
+ {pending,hidden,public,deleted}
+

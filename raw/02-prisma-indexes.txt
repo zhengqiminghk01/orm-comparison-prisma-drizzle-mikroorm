@@ -1,0 +1,6 @@
+CREATE UNIQUE INDEX comment_media_comment_id_sort_order_key ON comment_media USING btree (comment_id, sort_order);
+CREATE INDEX comments_status_created_at_idx ON comments USING btree (status, created_at);
+CREATE INDEX comments_tenant_id_parent_id_created_at_id_idx ON comments USING btree (tenant_id, parent_id, created_at, id);
+CREATE INDEX comments_tenant_id_parent_id_popularity_score_id_idx ON comments USING btree (tenant_id, parent_id, popularity_score DESC, id);
+CREATE INDEX comments_tenant_id_union_id_created_at_idx ON comments USING btree (tenant_id, union_id, created_at);
+CREATE UNIQUE INDEX tenant_settings_tenant_id_key ON tenant_settings USING btree (tenant_id);

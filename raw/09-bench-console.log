@@ -1,0 +1,13 @@
+ERROR:  VACUUM cannot run inside a transaction block
+{"orm":"prisma","round":1,"page_p50":0.702,"page_p95":1.022,"ins":1674,"rss":349.2}
+{"orm":"drizzle","round":1,"page_p50":0.418,"page_p95":0.77,"ins":3274.8,"rss":199.9}
+{"orm":"mikro","round":1,"page_p50":1.325,"page_p95":1.992,"ins":1258.8,"rss":351.5}
+ERROR:  VACUUM cannot run inside a transaction block
+{"orm":"drizzle","round":2,"page_p50":0.409,"page_p95":0.727,"ins":3482.9,"rss":194.9}
+{"orm":"mikro","round":2,"page_p50":1.248,"page_p95":2.033,"ins":1515.8,"rss":350.7}
+{"orm":"prisma","round":2,"page_p50":0.651,"page_p95":1.034,"ins":1527.2,"rss":345}
+ERROR:  VACUUM cannot run inside a transaction block
+{"orm":"mikro","round":3,"page_p50":1.292,"page_p95":2.042,"ins":1173.1,"rss":342.2}
+{"orm":"prisma","round":3,"page_p50":0.648,"page_p95":1.029,"ins":1501.6,"rss":342.4}
+{"orm":"drizzle","round":3,"page_p50":0.409,"page_p95":0.724,"ins":3123.7,"rss":207.6}
+BENCH_DONE

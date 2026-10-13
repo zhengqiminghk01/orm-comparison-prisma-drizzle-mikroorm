@@ -1,0 +1,12 @@
+prisma               : 7.10.0
+@prisma/client       : 7.10.0
+Operating System     : linux
+Architecture         : x64
+Node.js              : v20.19.2
+TypeScript           : 5.9.3
+Query Compiler       : enabled
+PSL                  : @prisma/prisma-schema-wasm 7.10.0-4.0edf323efd1d98336f3f0a68684b56f689b900d3
+Schema Engine        : schema-engine-cli 0edf323efd1d98336f3f0a68684b56f689b900d3 (at node_modules/@prisma/engines/schema-engine-debian-openssl-3.0.x)
+Default Engines Hash : 0edf323efd1d98336f3f0a68684b56f689b900d3
+Studio               : 0.33.0
+Prisma CLI Path      : ./prisma/node_modules/prisma

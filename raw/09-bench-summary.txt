@@ -1,0 +1,38 @@
+page_seq
+  prisma   p50    0.667 (0.648-0.702)  p95    1.028  ops/s  1420.133 [1373.7, 1434, 1452.7]
+  drizzle  p50    0.412 (0.409-0.418)  p95     0.74  ops/s  2202.767 [2160.5, 2205.7, 2242.1]
+  mikro    p50    1.288 (1.248-1.325)  p95    2.022  ops/s   719.133 [700.5, 736.6, 720.3]
+page_conc10
+  prisma   p50    1.884 (1.759-2.026)  p95    4.472  ops/s    4146.2 [4174.4, 4252.8, 4011.4]
+  drizzle  p50    1.576 (1.472-1.702)  p95    3.522  ops/s  5126.267 [5536, 5314.2, 4528.6]
+  mikro    p50      8.9 (7.845-10.605)  p95    17.62  ops/s    1023.3 [1123.9, 1035.8, 910.2]
+byid_seq
+  prisma   p50    0.195 (0.188-0.205)  p95    0.419  ops/s  4166.233 [4148.2, 3943.5, 4407]
+  drizzle  p50    0.111 (0.109-0.114)  p95    0.198  ops/s    7824.0 [7900.9, 7829.1, 7742]
+  mikro    p50    0.405 (0.341-0.437)  p95    0.663  ops/s    2341.8 [2253, 2557.6, 2214.8]
+insert_seq
+  prisma   p50    0.563 (0.548-0.586)  p95    0.932  ops/s    1567.6 [1674, 1527.2, 1501.6]
+  drizzle  p50    0.256 (0.241-0.276)  p95    0.527  ops/s    3293.8 [3274.8, 3482.9, 3123.7]
+  mikro    p50    0.661 (0.574-0.741)  p95     1.18  ops/s    1315.9 [1258.8, 1515.8, 1173.1]
+insert_batch500
+  prisma   p50    87.51 (79.749-97.807)  p95   127.28  ops/s      11.2 [11.4, 10.1, 12.1]
+  drizzle  p50   45.478 (40.532-54.009)  p95   69.622  ops/s    21.833 [24.6, 22.9, 18]
+  mikro    p50   45.046 (43.449-47.651)  p95   61.309  ops/s      22.0 [22, 23.2, 20.8]
+reply_tx
+  prisma   p50    1.169 (1.087-1.269)  p95    1.898  ops/s   728.867 [808.7, 612.6, 765.3]
+  drizzle  p50    0.582 (0.549-0.606)  p95    1.046  ops/s    1439.9 [1198.3, 1626.6, 1494.8]
+  mikro    p50    1.597 (1.479-1.783)  p95    2.282  ops/s   554.333 [577.2, 560.3, 525.5]
+upsert_batch1000
+  prisma   p50    9.539 (7.103-11.689)  p95    13.28  ops/s     106.1 [84.9, 98.9, 134.5]
+  drizzle  p50    48.99 (46.17-53.552)  p95   76.307  ops/s      19.6 [17.8, 20.8, 20.2]
+  mikro    p50   61.265 (58.819-64.247)  p95   98.449  ops/s    15.867 [16.4, 14.9, 16.3]
+stats_groupby
+  prisma   p50   49.806 (49.431-50.183)  p95   55.241  ops/s    19.833 [20.2, 19.4, 19.9]
+  drizzle  p50   46.982 (46.286-48.189)  p95    54.52  ops/s    20.833 [20.9, 21.1, 20.5]
+  mikro    p50   49.101 (48.929-49.358)  p95   58.624  ops/s      19.7 [19.6, 20, 19.5]
+drizzle rss [199.9, 194.9, 207.6]
+mikro rss [351.5, 350.7, 342.2]
+prisma rss [349.2, 345, 342.4]
+coldstart prisma: wall median 195.0 (min 180 max 223), in-process to first result median 180.4, init median 5.15, firstQuery median 85.75, rss median 93.35
+coldstart drizzle: wall median 66.0 (min 63 max 71), in-process to first result median 54.8, init median 1.2, firstQuery median 12.649999999999999, rss median 50.9
+coldstart mikro: wall median 325.0 (min 305 max 386), in-process to first result median 307.75, init median 200.2, firstQuery median 28.7, rss median 95.9

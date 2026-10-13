@@ -1,0 +1,1 @@
+{"orm":"prisma","method":"$transaction([...1000 x upsert])","msPerBatch1000":[790.4,608.5,531.8,456.8,457.6]}

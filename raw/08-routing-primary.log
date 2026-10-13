@@ -1,0 +1,48 @@
+[MARK] LOG:  statement: select 'BEGIN READ_page'
+[MARK] LOG:  statement: select 'END READ_page'
+[MARK] LOG:  statement: select 'BEGIN READ_stats'
+[MARK] LOG:  statement: select 'END READ_stats'
+[MARK] LOG:  statement: select 'BEGIN WRITE_insert'
+[prisma] LOG:  execute <unnamed>: INSERT INTO "public"."comments" ("id","tenant_id","parent_id","union_id","content","status","text_status","popularity_score","created_at","updated_at") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."comment_status"),CAST($7::text AS "public"."comment_status"),$8,$9,$10) RETURNING "public"."comments"."id", "public"."comments"."tenant_id", "public"."comments"."parent_id", "public"."comments"."union_id", "public"."comments"."content", "public"."comments"."status"::text, "public"."comments"."text_status"::text, "public"."comments"."popularity_score", "public"."comments"."moderation_result", "public"."comments"."nonce", "public"."comments"."created_at", "public"."comments"."updated_at", "public"."comments"."deleted_at"
+[prisma] DETAIL:  Parameters: $1 = '01a12fb0-34dc-775f-8e8d-74d3275f0eec', $2 = '00000000-0000-7000-8000-000000000001', $3 = '00000000-0000-7000-9000-000000000000', $4 = '2', $5 = 'bench 1', $6 = 'public', $7 = 'public', $8 = '0', $9 = '2026-10-12 10:37:19.453+08', $10 = '2026-10-12 10:37:19.453+08'
+[MARK] LOG:  statement: select 'END WRITE_insert'
+[MARK] LOG:  statement: select 'BEGIN TX_reply'
+[prisma] LOG:  statement: BEGIN
+[prisma] LOG:  execute <unnamed>: SELECT "public"."comments"."id", "public"."comments"."parent_id" FROM "public"."comments" WHERE ("public"."comments"."id" = $1 AND "public"."comments"."tenant_id" = $2 AND "public"."comments"."deleted_at" IS NULL) LIMIT $3 OFFSET $4
+[prisma] DETAIL:  Parameters: $1 = '01a12fb0-0735-7397-88ce-e19f2f1c3d0b', $2 = '00000000-0000-7000-8000-000000000001', $3 = '1', $4 = '0'
+[prisma] LOG:  execute <unnamed>: INSERT INTO "public"."comments" ("id","tenant_id","parent_id","union_id","content","status","text_status","popularity_score","created_at","updated_at") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."comment_status"),CAST($7::text AS "public"."comment_status"),$8,$9,$10) RETURNING "public"."comments"."id"
+[prisma] DETAIL:  Parameters: $1 = '01a12fb0-34fa-715f-8207-17afb6ebc7d7', $2 = '00000000-0000-7000-8000-000000000001', $3 = '01a12fb0-0735-7397-88ce-e19f2f1c3d0b', $4 = '1', $5 = 'reply 1', $6 = 'pending', $7 = 'pending', $8 = '0', $9 = '2026-10-12 10:37:19.482+08', $10 = '2026-10-12 10:37:19.482+08'
+[prisma] LOG:  statement: COMMIT
+[MARK] LOG:  statement: select 'END TX_reply'
+[MARK] LOG:  statement: select 'BEGIN READ_page'
+[MARK] LOG:  statement: select 'END READ_page'
+[MARK] LOG:  statement: select 'BEGIN READ_stats'
+[MARK] LOG:  statement: select 'END READ_stats'
+[MARK] LOG:  statement: select 'BEGIN WRITE_insert'
+[drizzle] LOG:  execute <unnamed>: insert into "comments" ("id", "tenant_id", "parent_id", "union_id", "content", "status", "text_status", "popularity_score", "moderation_result", "nonce", "created_at", "updated_at", "deleted_at") values ($1, $2, $3, $4, $5, $6, $7, default, default, default, default, $8, default)
+[drizzle] DETAIL:  Parameters: $1 = '01a12fb0-378f-7e56-9012-afd5284c3e4d', $2 = '00000000-0000-7000-8000-000000000001', $3 = '00000000-0000-7000-9000-000000000000', $4 = '2', $5 = 'bench 1', $6 = 'public', $7 = 'public', $8 = '2026-10-12 18:37:20.143+08'
+[MARK] LOG:  statement: select 'END WRITE_insert'
+[MARK] LOG:  statement: select 'BEGIN TX_reply'
+[drizzle] LOG:  statement: begin
+[drizzle] LOG:  execute <unnamed>: select "id", "parent_id" from "comments" where ("comments"."id" = $1 and "comments"."tenant_id" = $2 and "comments"."deleted_at" is null) limit $3
+[drizzle] DETAIL:  Parameters: $1 = '01a12fb0-0735-7397-88ce-e19f2f1c3d0b', $2 = '00000000-0000-7000-8000-000000000001', $3 = '1'
+[drizzle] LOG:  execute <unnamed>: insert into "comments" ("id", "tenant_id", "parent_id", "union_id", "content", "status", "text_status", "popularity_score", "moderation_result", "nonce", "created_at", "updated_at", "deleted_at") values ($1, $2, $3, $4, $5, default, default, default, default, default, default, $6, default) returning "id"
+[drizzle] DETAIL:  Parameters: $1 = '01a12fb0-37aa-76fb-a703-578f0b88e7d6', $2 = '00000000-0000-7000-8000-000000000001', $3 = '01a12fb0-0735-7397-88ce-e19f2f1c3d0b', $4 = '1', $5 = 'reply 1', $6 = '2026-10-12 18:37:20.17+08'
+[drizzle] LOG:  statement: commit
+[MARK] LOG:  statement: select 'END TX_reply'
+[MARK] LOG:  statement: select 'BEGIN READ_page'
+[MARK] LOG:  statement: select 'END READ_page'
+[MARK] LOG:  statement: select 'BEGIN READ_stats'
+[MARK] LOG:  statement: select 'END READ_stats'
+[MARK] LOG:  statement: select 'BEGIN WRITE_insert'
+[[unknown]] LOG:  statement: select 1 from pg_database where datname = 'b_bench'
+[[unknown]] LOG:  statement: begin
+[[unknown]] LOG:  statement: insert into "comments" ("id", "tenant_id", "parent_id", "union_id", "content", "status", "text_status", "popularity_score", "created_at", "updated_at") values ('01a12fb0-3bad-751a-ad86-f071cb7034ea', '00000000-0000-7000-8000-000000000001', '00000000-0000-7000-9000-000000000000', '2', 'bench 1', 'public', 'public', 0, '2026-10-12T10:37:21.197Z', '2026-10-12T10:37:21.197Z')
+[[unknown]] LOG:  statement: commit
+[MARK] LOG:  statement: select 'END WRITE_insert'
+[MARK] LOG:  statement: select 'BEGIN TX_reply'
+[[unknown]] LOG:  statement: begin
+[[unknown]] LOG:  statement: select "c0"."id", "c0"."parent_id" from "comments" as "c0" where "c0"."id" = '01a12fb0-378f-7e56-9012-afd5284c3e4d' and "c0"."tenant_id" = '00000000-0000-7000-8000-000000000001' and "c0"."deleted_at" is null limit 1
+[[unknown]] LOG:  statement: insert into "comments" ("id", "tenant_id", "parent_id", "union_id", "content", "status", "text_status", "popularity_score", "created_at", "updated_at") values ('01a12fb0-3bcf-7936-b12c-303b1dd3f393', '00000000-0000-7000-8000-000000000001', '01a12fb0-378f-7e56-9012-afd5284c3e4d', '1', 'reply 1', 'pending', 'pending', 0, '2026-10-12T10:37:21.231Z', '2026-10-12T10:37:21.231Z')
+[[unknown]] LOG:  statement: commit
+[MARK] LOG:  statement: select 'END TX_reply'

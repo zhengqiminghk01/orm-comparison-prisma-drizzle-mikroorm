@@ -1,0 +1,8 @@
+Migration20261012102905.ts successfully created
+[migrator] Processing 'Migration20261012102905'
+[migrator] Applied 'Migration20261012102905'
+Successfully migrated up to the latest version
+
+real	0m3.283s
+user	0m2.829s
+sys	0m0.565s

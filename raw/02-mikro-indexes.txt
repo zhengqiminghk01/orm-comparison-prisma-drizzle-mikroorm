@@ -1,0 +1,5 @@
+CREATE UNIQUE INDEX comments_nonce_uk ON comments USING btree (tenant_id, union_id, nonce) WHERE (nonce IS NOT NULL);
+CREATE INDEX comments_popular_idx ON comments USING btree (tenant_id, parent_id, popularity_score DESC, id);
+CREATE INDEX comments_status_created_at_index ON comments USING btree (status, created_at);
+CREATE INDEX comments_tenant_id_parent_id_created_at_id_index ON comments USING btree (tenant_id, parent_id, created_at, id);
+CREATE INDEX comments_tenant_id_union_id_created_at_index ON comments USING btree (tenant_id, union_id, created_at);

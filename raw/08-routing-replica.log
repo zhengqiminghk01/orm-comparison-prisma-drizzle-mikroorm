@@ -1,0 +1,39 @@
+[prisma] LOG:  execute <unnamed>: SELECT "public"."comments"."id", "public"."comments"."union_id", "public"."comments"."content", "public"."comments"."created_at", "public"."comments"."popularity_score" FROM "public"."comments" WHERE ("public"."comments"."tenant_id" = $1 AND "public"."comments"."parent_id" = $2 AND "public"."comments"."deleted_at" IS NULL AND "public"."comments"."status" = CAST($3::text AS "public"."comment_status")) ORDER BY "public"."comments"."created_at" DESC, "public"."comments"."id" DESC LIMIT $4 OFFSET $5
+[prisma] DETAIL:  Parameters: $1 = '00000000-0000-7000-8000-000000000001', $2 = '00000000-0000-7000-9000-000000000000', $3 = 'public', $4 = '21', $5 = '0'
+[MARK] LOG:  statement: select 'BEGIN READ_page'
+[prisma] LOG:  execute <unnamed>: SELECT "public"."comments"."id", "public"."comments"."union_id", "public"."comments"."content", "public"."comments"."created_at", "public"."comments"."popularity_score" FROM "public"."comments" WHERE ("public"."comments"."tenant_id" = $1 AND "public"."comments"."parent_id" = $2 AND "public"."comments"."deleted_at" IS NULL AND "public"."comments"."status" = CAST($3::text AS "public"."comment_status")) ORDER BY "public"."comments"."created_at" DESC, "public"."comments"."id" DESC LIMIT $4 OFFSET $5
+[prisma] DETAIL:  Parameters: $1 = '00000000-0000-7000-8000-000000000001', $2 = '00000000-0000-7000-9000-000000000000', $3 = 'public', $4 = '21', $5 = '0'
+[MARK] LOG:  statement: select 'END READ_page'
+[MARK] LOG:  statement: select 'BEGIN READ_stats'
+[prisma] LOG:  execute <unnamed>: SELECT COUNT(*) AS "_count$_all", AVG("public"."comments"."popularity_score") AS "_avg$popularity_score", "public"."comments"."status"::text FROM "public"."comments" WHERE ("public"."comments"."tenant_id" = $1 AND "public"."comments"."parent_id" = $2) GROUP BY "public"."comments"."status" OFFSET $3
+[prisma] DETAIL:  Parameters: $1 = '00000000-0000-7000-8000-000000000001', $2 = '00000000-0000-7000-9000-000000000000', $3 = '0'
+[MARK] LOG:  statement: select 'END READ_stats'
+[MARK] LOG:  statement: select 'BEGIN WRITE_insert'
+[MARK] LOG:  statement: select 'END WRITE_insert'
+[MARK] LOG:  statement: select 'BEGIN TX_reply'
+[MARK] LOG:  statement: select 'END TX_reply'
+[drizzle] LOG:  execute <unnamed>: select "id", "union_id", "content", "created_at", "popularity_score" from "comments" where ("comments"."tenant_id" = $1 and "comments"."parent_id" = $2 and "comments"."deleted_at" is null and "comments"."status" = $3) order by "comments"."created_at" desc, "comments"."id" desc limit $4
+[drizzle] DETAIL:  Parameters: $1 = '00000000-0000-7000-8000-000000000001', $2 = '00000000-0000-7000-9000-000000000000', $3 = 'public', $4 = '21'
+[MARK] LOG:  statement: select 'BEGIN READ_page'
+[drizzle] LOG:  execute <unnamed>: select "id", "union_id", "content", "created_at", "popularity_score" from "comments" where ("comments"."tenant_id" = $1 and "comments"."parent_id" = $2 and "comments"."deleted_at" is null and "comments"."status" = $3) order by "comments"."created_at" desc, "comments"."id" desc limit $4
+[drizzle] DETAIL:  Parameters: $1 = '00000000-0000-7000-8000-000000000001', $2 = '00000000-0000-7000-9000-000000000000', $3 = 'public', $4 = '21'
+[MARK] LOG:  statement: select 'END READ_page'
+[MARK] LOG:  statement: select 'BEGIN READ_stats'
+[drizzle] LOG:  execute <unnamed>: select "status", count(*), avg("popularity_score") from "comments" where ("comments"."tenant_id" = $1 and "comments"."parent_id" = $2) group by "comments"."status"
+[drizzle] DETAIL:  Parameters: $1 = '00000000-0000-7000-8000-000000000001', $2 = '00000000-0000-7000-9000-000000000000'
+[MARK] LOG:  statement: select 'END READ_stats'
+[MARK] LOG:  statement: select 'BEGIN WRITE_insert'
+[MARK] LOG:  statement: select 'END WRITE_insert'
+[MARK] LOG:  statement: select 'BEGIN TX_reply'
+[MARK] LOG:  statement: select 'END TX_reply'
+[[unknown]] LOG:  statement: select "c0"."id", "c0"."union_id", "c0"."content", "c0"."created_at", "c0"."popularity_score" from "comments" as "c0" where "c0"."tenant_id" = '00000000-0000-7000-8000-000000000001' and "c0"."parent_id" = '00000000-0000-7000-9000-000000000000' and "c0"."deleted_at" is null and "c0"."status" = 'public' order by "c0"."created_at" desc, "c0"."id" desc limit 21
+[MARK] LOG:  statement: select 'BEGIN READ_page'
+[[unknown]] LOG:  statement: select "c0"."id", "c0"."union_id", "c0"."content", "c0"."created_at", "c0"."popularity_score" from "comments" as "c0" where "c0"."tenant_id" = '00000000-0000-7000-8000-000000000001' and "c0"."parent_id" = '00000000-0000-7000-9000-000000000000' and "c0"."deleted_at" is null and "c0"."status" = 'public' order by "c0"."created_at" desc, "c0"."id" desc limit 21
+[MARK] LOG:  statement: select 'END READ_page'
+[MARK] LOG:  statement: select 'BEGIN READ_stats'
+[[unknown]] LOG:  statement: select "c"."status", count(*) as n, avg(c.popularity_score) as avg_score from "comments" as "c" where "c"."tenant_id" = '00000000-0000-7000-8000-000000000001' and "c"."parent_id" = '00000000-0000-7000-9000-000000000000' group by "c"."status"
+[MARK] LOG:  statement: select 'END READ_stats'
+[MARK] LOG:  statement: select 'BEGIN WRITE_insert'
+[MARK] LOG:  statement: select 'END WRITE_insert'
+[MARK] LOG:  statement: select 'BEGIN TX_reply'
+[MARK] LOG:  statement: select 'END TX_reply'

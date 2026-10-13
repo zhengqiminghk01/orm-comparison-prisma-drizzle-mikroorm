@@ -1,0 +1,63 @@
+### PRISMA: migrate diff db->schema --exit-code
+Loaded Prisma config from prisma.config.ts.
+
+-- AlterTable
+ALTER TABLE "accounts" DROP COLUMN "drift_col";
+exit=2
+### PRISMA: migrate status
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "b_prisma", schema "public" at "127.0.0.1:5432"
+
+6 migrations found in prisma/migrations
+
+Database schema is up to date!
+exit=0
+### DRIZZLE: drizzle-kit check
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+Everything's fine 🐶🔥
+exit=0
+### DRIZZLE: drizzle-kit push --strict --verbose (answered via no TTY)
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] Pulling schema from database...
+[2K[1G[✓] Pulling schema from database...
+
+ Warning  You are about to execute current statements:
+
+ALTER TABLE "accounts" DROP COLUMN "drift_col";
+
+ Warning  Found data-loss statements:
+· You're about to delete drift_col column in accounts table with 2 items
+
+THIS ACTION WILL CAUSE DATA LOSS AND CANNOT BE REVERTED
+
+Do you still want to push changes?
+Error: Interactive prompts require a TTY terminal (process.stdin.isTTY or process.stdout.isTTY is false). This can happen when running in CI, piped input, or non-interactive shells.
+    at render10 (./drizzle/node_modules/drizzle-kit/bin.cjs:1450:31)
+    at pgPush (./drizzle/node_modules/drizzle-kit/bin.cjs:82756:70)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async Object.handler (./drizzle/node_modules/drizzle-kit/bin.cjs:92236:9)
+    at async run (./drizzle/node_modules/drizzle-kit/bin.cjs:91472:7)
+exit=0
+### MIKRO: migration:check
+Changes detected. Please create migration to update schema.
+exit=1
+### MIKRO: schema:update --dump
+set names 'utf8';
+
+alter table "accounts" drop column "drift_col";
+
+drop index "comments_nonce_uk";
+drop index "comments_popular_idx";
+create index "comments_popular_idx" on "comments" ("tenant_id","parent_id","popularity_score" desc,"id");
+create unique index "comments_nonce_uk" on "comments" ("tenant_id","union_id","nonce") where "nonce" is not null;
+
+
+exit=0
+### MIKRO migration:check with NO drift (only expression indexes)
+Changes detected. Please create migration to update schema.
+exit=1

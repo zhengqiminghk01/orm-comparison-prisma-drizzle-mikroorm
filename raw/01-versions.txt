@@ -1,0 +1,29 @@
+[prisma]
+@prisma/adapter-pg 7.10.0
+@prisma/client 7.10.0
+@prisma/extension-read-replicas 0.5.0
+@types/node 26.6.5
+pg 8.23.1
+prisma 8.0.0-rc.22
+tsx 4.23.15
+typescript 6.0.3
+[drizzle]
+@types/node 26.6.5
+@types/pg 8.23.1
+drizzle-kit 0.31.11
+drizzle-orm 0.45.4
+pg 8.23.1
+tsx 4.23.15
+typescript 7.0.2
+[mikro]
+@mikro-orm/cli 7.2.5
+@mikro-orm/core 7.2.5
+@mikro-orm/migrations 7.2.5
+@mikro-orm/postgresql 7.2.5
+@types/node 26.6.5
+tsx 4.23.15
+typescript 7.0.2
+prisma @nestjs/core 11.2.7
+drizzle @nestjs/core 11.2.7
+mikro @nestjs/core 11.2.7
+mikro @mikro-orm/nestjs 7.1.0

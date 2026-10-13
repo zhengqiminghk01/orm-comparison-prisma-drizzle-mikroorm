@@ -1,0 +1,1 @@
+ALTER TABLE "accounts" ADD COLUMN "language" smallint DEFAULT 1 NOT NULL;

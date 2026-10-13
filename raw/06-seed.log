@@ -1,0 +1,13 @@
+ERROR:  integer out of range
+ERROR:  duplicate key value violates unique constraint "accounts_pkey"
+DETAIL:  Key (union_id)=(1) already exists.
+ count 
+-------
+    51
+(1 row)
+
+ comments | accounts |  size  
+----------+----------+--------
+  1000051 |   100000 | 601 MB
+(1 row)
+

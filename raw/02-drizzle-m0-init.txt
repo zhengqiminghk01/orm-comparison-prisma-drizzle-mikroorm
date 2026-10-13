@@ -1,0 +1,17 @@
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+5 tables
+accounts 8 columns 0 indexes 0 fks
+comment_media 12 columns 1 indexes 1 fks
+comments 13 columns 5 indexes 2 fks
+tenant_settings 9 columns 0 indexes 1 fks
+tenants 6 columns 0 indexes 0 fks
+
+[✓] Your SQL migration file ➜ drizzle/0000_init.sql 🚀
+No config path provided, using default 'drizzle.config.ts'
+Reading config file './drizzle/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[2K[1G[⣷] applying migrations...
+real	0m1.632s
+user	0m1.677s
+sys	0m0.227s

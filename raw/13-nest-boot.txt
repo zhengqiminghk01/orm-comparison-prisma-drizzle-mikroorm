@@ -1,0 +1,4 @@
+{"orm":"prisma","nestBootPlusFirstPageMs":128.8,"rows":20}
+{"orm":"drizzle","nestBootPlusFirstPageMs":32.9,"rows":20}
+{"orm":"mikro","nestBootPlusFirstPageMs":112.6,"rows":20}
+(note: first MikroORM Nest boot attempt failed with 'No driver specified' until ormConfig was wrapped in defineConfig from @mikro-orm/postgresql; logged here)

@@ -1,0 +1,19 @@
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "b_prisma", schema "public" at "127.0.0.1:5432"
+
+Applying migration `20261012102816_init`
+
+The following migration(s) have been created and applied from new schema changes:
+
+prisma/migrations/
+  └─ 20261012102816_init/
+    └─ migration.sql
+
+Your database is now in sync with your schema.
+
+
+real	0m2.035s
+user	0m1.990s
+sys	0m0.297s

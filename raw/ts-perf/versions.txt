@@ -1,0 +1,4 @@
+d045: {"@types/node":"24.19.2","@types/pg":"8.23.1","drizzle-orm":"0.45.4","pg":"8.23.1","typescript":"5.9.3"}
+d1rc: {"@types/node":"24.19.2","@types/pg":"8.23.1","drizzle-orm":"1.0.0-rc.4","pg":"8.23.1","typescript":"5.9.3"}
+prisma: {"@prisma/adapter-pg":"7.10.0","@prisma/client":"7.10.0","@types/node":"24.19.2","prisma":"7.10.0","typescript":"5.9.3"}
+typescript 5.9.3; node v24.13.0; 8 vCPU; 15 GB RAM

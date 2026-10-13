@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+}
+datasource db {
+  provider = "postgresql"
+}
+enum CommentStatus {
+  pending
+  hidden
+  public
+  deleted
+  @@map("comment_status")
+}
+model Tenant {
+  id             String          @id @default(uuid(7)) @db.Uuid
+  tenantName     String          @map("tenant_name")
+  storageProfile String          @map("storage_profile")
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt      DateTime?       @map("deleted_at") @db.Timestamptz
+  settings       TenantSetting?
+  comments       Comment[]
+  @@map("tenants")
+}
+model TenantSetting {
+  id                   String    @id @default(uuid(7)) @db.Uuid
+  tenantId             String    @unique @map("tenant_id") @db.Uuid
+  postIntervalSeconds  Int?      @map("post_interval_seconds")
+  dailyQuota           Int?      @map("daily_quota")
+  replyEnabled         Boolean   @default(true) @map("reply_enabled")
+  moderationEnabled    Boolean   @default(true) @map("moderation_enabled")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt            DateTime? @map("deleted_at") @db.Timestamptz
+  tenant               Tenant    @relation(fields: [tenantId], references: [id])
+  @@map("tenant_settings")
+}
+model Comment {
+  id               String        @id @default(uuid(7)) @db.Uuid
+  tenantId         String        @map("tenant_id") @db.Uuid
+  parentId         String?       @map("parent_id") @db.Uuid
+  unionId          String?       @map("union_id")
+  content          String
+  status           CommentStatus @default(pending)
+  textStatus       CommentStatus @default(pending) @map("text_status")
+  popularityScore  Int           @default(0) @map("popularity_score")
+  moderationResult Json?         @map("moderation_result")
+  nonce            String?
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt        DateTime?     @map("deleted_at") @db.Timestamptz
+  tenant           Tenant        @relation(fields: [tenantId], references: [id])
+  parent           Comment?      @relation("tree", fields: [parentId], references: [id])
+  children         Comment[]     @relation("tree")
+  media            CommentMedia[]
+  @@index([tenantId, parentId, createdAt, id])
+  @@index([tenantId, parentId, popularityScore(sort: Desc), id])
+  @@index([tenantId, unionId, createdAt])
+  @@index([status, createdAt])
+  @@map("comments")
+}
+model CommentMedia {
+  id             String        @id @default(uuid(7)) @db.Uuid
+  commentId      String        @map("comment_id") @db.Uuid
+  sortOrder      Int           @map("sort_order")
+  mimeType       String        @map("mime_type")
+  sizeBytes      Int           @map("size_bytes")
+  storageProfile String        @map("storage_profile")
+  storagePath    String        @map("storage_path")
+  url            String?
+  status         CommentStatus @default(pending)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt      DateTime?     @map("deleted_at") @db.Timestamptz
+  comment        Comment       @relation(fields: [commentId], references: [id])
+  @@index([commentId, sortOrder])
+  @@map("comment_media")
+}
+model Account {
+  unionId          String    @id @map("union_id")
+  nickname         String
+  avatarUrl        String?   @map("avatar_url")
+  accountCreatedAt DateTime  @map("account_created_at") @db.Timestamptz
+  accountStatus    String    @map("account_status")
+  language         Int       @default(1) @db.SmallInt
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz
+  @@index([createdAt])
+  @@map("accounts")
+}

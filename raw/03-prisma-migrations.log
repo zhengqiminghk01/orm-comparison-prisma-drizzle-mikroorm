@@ -1,0 +1,181 @@
+=== m1_add_language
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "b_prisma", schema "public" at "127.0.0.1:5432"
+
+Prisma Migrate created the following migration without applying it 20261012102924_m1_add_language
+
+You can now edit it and apply it by running prisma migrate dev.
+exit=0
+--- SQL
+-- AlterTable
+ALTER TABLE "accounts" ADD COLUMN     "language" SMALLINT NOT NULL DEFAULT 1;
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "b_prisma", schema "public" at "127.0.0.1:5432"
+
+2 migrations found in prisma/migrations
+
+Applying migration `20261012102924_m1_add_language`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20261012102924_m1_add_language/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+deploy exit=0
+=== m2_unique_to_index
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "b_prisma", schema "public" at "127.0.0.1:5432"
+
+Prisma Migrate created the following migration without applying it 20261012102926_m2_unique_to_index
+
+You can now edit it and apply it by running prisma migrate dev.
+exit=0
+--- SQL
+-- DropIndex
+DROP INDEX "comment_media_comment_id_sort_order_key";
+
+-- CreateIndex
+CREATE INDEX "comment_media_comment_id_sort_order_idx" ON "comment_media"("comment_id", "sort_order");
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "b_prisma", schema "public" at "127.0.0.1:5432"
+
+3 migrations found in prisma/migrations
+
+Applying migration `20261012102926_m2_unique_to_index`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20261012102926_m2_unique_to_index/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+deploy exit=0
+=== m3_add_index
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "b_prisma", schema "public" at "127.0.0.1:5432"
+
+Prisma Migrate created the following migration without applying it 20261012102928_m3_add_index
+
+You can now edit it and apply it by running prisma migrate dev.
+exit=0
+--- SQL
+-- CreateIndex
+CREATE INDEX "accounts_created_at_idx" ON "accounts"("created_at");
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "b_prisma", schema "public" at "127.0.0.1:5432"
+
+4 migrations found in prisma/migrations
+
+Applying migration `20261012102928_m3_add_index`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20261012102928_m3_add_index/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+deploy exit=0
+=== m4_rename
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "b_prisma", schema "public" at "127.0.0.1:5432"
+
+
+
+⚠️ We found changes that cannot be executed:
+
+  • Step 0 Added the required column `nickname` to the `accounts` table without a default value. There are 2 rows in this table, it is not possible to execute this step.
+
+
+⚠️  Warnings for the current datasource:
+
+  • You are about to drop the column `display_username` on the `accounts` table, which still contains 2 non-null values.
+
+Error: Prisma Migrate has detected that the environment is non-interactive, which is not supported.
+
+`prisma migrate dev` is an interactive command designed to create new migrations and evolve the database in development.
+To apply existing migrations in deployments, use prisma migrate deploy.
+See https://pris.ly/d/migrate-deploy
+exit=1
+=== m4_rename via migrate diff (auto-generated, before hand edit)
+Loaded Prisma config from prisma.config.ts.
+
+-- AlterTable
+ALTER TABLE "accounts" DROP COLUMN "display_username",
+ADD COLUMN     "nickname" TEXT NOT NULL;
+
+exit=0
+--- hand-written SQL:
+ALTER TABLE "accounts" RENAME COLUMN "display_username" TO "nickname";
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "b_prisma", schema "public" at "127.0.0.1:5432"
+
+5 migrations found in prisma/migrations
+
+Applying migration `20261012182937_m4_rename`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20261012182937_m4_rename/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+deploy exit=0
+--- post-rename diff (should be empty):
+Loaded Prisma config from prisma.config.ts.
+
+-- This is an empty migration.
+
+ 1        | alice
+ 2        | bob
+
+=== m5_enum_backfill
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "b_prisma", schema "public" at "127.0.0.1:5432"
+
+Prisma Migrate created the following migration without applying it 20261012102941_m5_enum_backfill
+
+You can now edit it and apply it by running prisma migrate dev.
+exit=0
+--- generated:
+-- AlterEnum
+ALTER TYPE "comment_status" ADD VALUE 'deleted';
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "b_prisma", schema "public" at "127.0.0.1:5432"
+
+6 migrations found in prisma/migrations
+
+Applying migration `20261012102941_m5_enum_backfill`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20261012102941_m5_enum_backfill/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+deploy exit=0

@@ -1,0 +1,211 @@
+<p>测试日期：2026-10-12（UTC+8）。测试环境：一台 Linux 测试机；PostgreSQL 17.11 primary + streaming replica；Node v24.13.0。命令、版本和原始输出在本报告的 <code>raw/</code> 目录。</p>
+<h2>结论</h2>
+<div data-type="panel-info">
+<p><strong>推荐：Prisma 7。</strong>版本必须锁定到精确的 7.x 版本。</p>
+<p>运行时性能和体积：Drizzle 最好。ORM 自身开销：Drizzle 每次查询比 Prisma 快约 1.6–2.2 倍。打包体积（gzip）：Drizzle 约为 Prisma 的 1/20。冷启动：Drizzle 约为 Prisma 的 1/3。</p>
+<p>需求 §5 的三项要求是读写分离、cursor 分页、事务内检查。三个 ORM 都满足这三项要求（已验证，见 §3.1 和 §5）。</p>
+<p><strong>推荐 Prisma 的 3 个原因：</strong></p>
+<ol>
+<li><strong>Maintenance cost 最低。</strong>team 的现有项目 ASJ 和 MCPB 都用 Prisma。两个仓库都用 Prisma 7 要求的 <code>prisma-client</code> generator。team 的 <code>nestjs-practices</code> skill 按 Prisma 编写。</li>
+<li><strong>无人值守时，migration 最安全。</strong>CI 和 AI agent 都属于无人值守场景。Prisma 拒绝执行会丢数据的 rename，exit code 为 1。Prisma 的 drift 检测返回可用的 exit code。Drizzle 和 MikroORM 的破坏性命令直接删除了数据（见 §3.2）。</li>
+<li><strong>性能差距不是本服务的瓶颈。</strong>ORM 之间的差距是亚毫秒级：主键查询 p50，Prisma 0.195 ms，Drizzle 0.111 ms。重 SQL 查询三者都是 47–50 ms。SQL 写法的影响更大：cursor 条件写法不同，查询耗时为 29.7 ms 或 0.077 ms（见 §3.3）。</li>
+</ol>
+<p><strong>可以改选 Drizzle 的条件：</strong>团队优先考虑内存和冷启动时，可以选 Drizzle。团队需要 row-value 比较或原生 bulk upsert 时，也可以选 Drizzle。选 Drizzle 时，团队必须接受以下三点：</p>
+<ul><li>Drizzle 仍是 0.x 版本，1.0 是 rc。Drizzle 0.45.4 的类型检查时间随 schema 变大而增长：200 张表时 Check time 为 3.39 s，1.0.0-rc.4 为 0.74 s（见 §2.4）。</li><li>rename 类 migration 必须在交互式终端（TTY）中人工选择。</li><li>drizzle-kit 不生成 down migration。</li></ul>
+<p><strong>不推荐 MikroORM。</strong>原因：三者中最慢；本次测试出现 migration 生成错误（见 §4）；npm 下载量最低。</p>
+</div>
+<h2>术语</h2>
+<ul>
+<li><strong>ORM 自身开销</strong>：同一条简单 SQL 在 ORM 内的额外耗时。本报告用主键查询 1 行的耗时表示。</li>
+<li><strong>无人值守</strong>：没有人在终端前确认的执行环境，例如 CI 和 AI agent。</li>
+<li><strong>drift</strong>：数据库实际 schema 与 ORM schema 定义不一致。</li>
+<li><strong>index churn</strong>：没有 schema 变化时，生成的 migration 仍然删除并重建索引。</li>
+</ul>
+<h2>1. Development cost（开发成本）</h2>
+<table><tr><th>项目</th><th>Prisma 7.10</th><th>Drizzle 0.45.4 / kit 0.31.11</th><th>MikroORM 7.2.5</th></tr>
+<tr><td>NestJS 接入与读写分离配置的代码量（db.ts、db.module.ts、config，非空行）</td><td>26 行</td><td>28 行；另加 8 行 UUIDv7 helper</td><td>26 行；另加 8 行 UUIDv7 helper</td></tr>
+<tr><td>ERD 子集的 schema 行数（5 张表、1 个 enum、5 个索引）</td><td>92（<code>.prisma</code> DSL）</td><td>66（TypeScript）</td><td>80（TypeScript <code>defineEntity</code>）</td></tr>
+<tr><td>UUIDv7 主键</td><td data-background="#E3FCEF">原生支持：<code>@default(uuid(7))</code></td><td>必须自己写 <code>$defaultFn</code></td><td>必须自己写 <code>onCreate</code></td></tr>
+<tr><td>Partial unique index（ERD：<code>(tenant_id, union_id, nonce) WHERE nonce IS NOT NULL</code>）</td><td data-background="#FFFAE6">必须开启 preview feature <code>partialIndexes</code>。不开启时，schema 校验报 P1012。</td><td data-background="#E3FCEF">原生支持：<code>.where(sql`...`)</code></td><td data-background="#FFFAE6">只能写成 raw expression。后果见 §4。</td></tr>
+<tr><td>cursor 分页 (created_at, id)</td><td>OR 写法，14 行。row-value 比较：本次测试未找到对应 API（未确认，确认方法：查阅 Prisma Client API 文档）。</td><td>12 行。可以用 <code>sql``</code> 写 row-value 比较。</td><td>10 行</td></tr>
+<tr><td>事务内检查 + 写入</td><td>7 行，interactive <code>$transaction</code></td><td>9 行</td><td>9 行（Unit of Work + flush）</td></tr>
+<tr><td>批量 upsert</td><td data-background="#FFFAE6">没有 bulk upsert API。<code>$executeRaw</code> + <code>unnest</code>：7 行。ORM 写法（1000 个 upsert 放在一个 <code>$transaction</code> 内）：每批 457–790 ms。</td><td data-background="#E3FCEF">原生 <code>onConflictDoUpdate</code>，5 行</td><td data-background="#E3FCEF">原生 <code>upsertMany</code>，5 行</td></tr>
+<tr><td>类型检查（<code>tsc --strict</code>）</td><td data-background="#E3FCEF">通过；没有 <code>as any</code></td><td data-background="#E3FCEF">通过；没有 <code>as any</code></td><td data-background="#FFFAE6">使用 <code>defineEntity</code> 时，<code>em.create</code> 传入 FK id 字符串报 TS2345。测试代码加了 3 处 <code>as any</code>。原因未确认：可能是测试代码的写法问题。确认方法：对照 MikroORM 文档的 <code>defineEntity</code> 示例。</td></tr>
+<tr><td>运行环境要求</td><td>Node ≥20.19；ESM；必须使用 driver adapter</td><td>本次测试没有发现特殊要求</td><td data-background="#FFEBE6">Node ≥22.17。Node 20 上 CLI 启动失败，报错：<code>globSync</code> 导出不存在。</td></tr>
+<tr><td>NestJS 启动 + 第一次分页（单次测量）</td><td>128.8 ms</td><td>32.9 ms</td><td>112.6 ms。config 必须用 <code>defineConfig</code> 包装，否则报 "No driver specified"。</td></tr>
+<tr><td>AI 辅助开发</td><td colspan="3">本项没有量化测试。社区观点：Prisma schema 集中在一个文件；Drizzle 没有 codegen 步骤（来源见 §7）。</td></tr>
+</table>
+<h2>2. Maintenance cost（维护成本）</h2>
+<h3>2.1 team 现有仓库</h3>
+<p>以下事实来自仓库的 <code>package.json</code> 和 <code>prisma/schema.prisma</code>：</p>
+<ul>
+<li>ASJ 和 MCPB 都用 <code>prisma</code> / <code>@prisma/client ^6.**</code>。</li>
+<li>两个仓库的 generator 都是 <code>prisma-client</code>，output 是 <code>src/generated/prisma</code>。</li>
+<li><strong>两个仓库的数据库都是 MySQL</strong>（<code>relationMode = "prisma"</code>），不是 PostgreSQL。可以复用的是 Prisma 工作流、DI 写法和 skill 规范。SQL 和 migration 文件不能直接复用。</li>
+<li><code>nestjs-practices</code> skill 的 <code>data-access.md</code>、<code>repo.template.ts</code>、<code>e2e-test.template.ts</code> 按 Prisma 编写，例如 <code>findUniqueOrThrow</code> 与 P2025 映射。改用 Drizzle 或 MikroORM 时，必须重写这部分 skill。</li>
+</ul>
+<h3>2.2 Prisma 6 升级到 7 的影响</h3>
+<p>Prisma 7 升级指南列出以下 breaking change：</p>
+<ul>
+<li>ESM。</li>
+<li>generator 必须指定 <code>output</code>。</li>
+<li>所有数据库都必须使用 driver adapter，例如 <code>@prisma/adapter-pg</code>。</li>
+<li>datasource URL 移到 <code>prisma.config.ts</code>。</li>
+<li>CLI 不再自动加载 env。</li>
+<li><code>migrate dev</code> 不再自动执行 generate。</li>
+<li>移除 client middleware。</li>
+<li>连接池默认值改变：pg driver 默认没有连接超时，v6 默认 5 秒。</li>
+</ul>
+<p>team 两个仓库已使用 <code>prisma-client</code> generator 和自定义 output，所以不受 output 这一项影响。<code>@prisma/extension-read-replicas</code> 0.5.0 要求 Prisma 7+；Prisma 6.x 必须用 0.4.1（来源：该包 README）。</p>
+<div data-type="panel-warning"><p><strong>必须锁定 Prisma 的精确版本。</strong>npm 上 <code>prisma</code> 的 <code>latest</code> tag 指向 8.0.0-rc.22（<code>raw/01-prisma-dist-tags.json</code>）。不锁定时，<code>npm i prisma</code> 安装 8.0.0-rc.22，与 <code>@prisma/client</code> 7.10.0 版本不匹配（本次测试出现）。Prisma 7 升级指南页面写有："Prisma ORM 8 is the current release"。</p></div>
+<h3>2.3 生态数据（抓取时间：2026-10-12 18:39 UTC+8）</h3>
+<table><tr><th></th><th>Prisma</th><th>Drizzle</th><th>MikroORM</th></tr>
+<tr><td>GitHub stars</td><td>47,696（prisma/orm）</td><td>36,003</td><td>9,246</td></tr>
+<tr><td>GitHub open issues + PRs</td><td>2,759</td><td>2,125</td><td>19</td></tr>
+<tr><td>npm 周下载量（2026-10-04 至 10-10）</td><td>prisma 19.19M；@prisma/client 18.47M</td><td>drizzle-orm 27.77M；drizzle-kit 22.80M</td><td>@mikro-orm/core 1.20M</td></tr>
+<tr><td>过去 12 个月的正式版数量</td><td>20</td><td>6（仍是 0.x；1.0 是 rc）</td><td>60</td></tr>
+<tr><td>最近一个大版本</td><td>7.0.0（2025-11-19）</td><td>没有（1.0.0-rc.4）</td><td>7.0.0（2026-03-11）</td></tr></table>
+<p>来源：GitHub REST API、api.npmjs.org、<code>npm view</code>。原始输出：<code>raw/11-ecosystem.txt</code>。stars 和下载量不直接代表质量。</p>
+<h3>2.4 TypeScript 类型检查性能</h3>
+<p><strong>结论：</strong></p>
+<ul>
+<li>已验证：Drizzle 0.45.4 的 Check time 随表数增长。10 张表为 0.43 s，200 张表为 3.39 s。</li>
+<li>已验证：Drizzle 1.0.0-rc.4（Relational Queries v2）在 200 张表时为 0.74 s。1.0 仍是 rc，npm <code>latest</code> 是 0.45.4。</li>
+<li>已验证：Prisma 7.10.0 的 Check time 几乎不变（0.17–0.28 s）。Prisma 的代价是 generated client：200 张表时为 598,924 行，tsc 内存为 861 MB。</li>
+<li>未确认：在本服务的规模（5 张表）下，三者的类型检查时间都低于 1.2 s。该差异对本服务影响很小。</li>
+</ul>
+<p><strong>测试方法：</strong>脚本生成 10、50、100、200 张表的 schema。每张表 13–15 列，包含 2 个外键。查询文件最多 20 个查询，包含两层嵌套关系查询、join、insert、update。每个版本执行 3 次 <code>tsc --noEmit --extendedDiagnostics --incremental false</code>，取中位数。环境：TypeScript 5.9.3，Node v24.13.0，8 vCPU。</p>
+<table><tr><th>表数</th><th>版本</th><th>Types</th><th>Instantiations</th><th>Memory MB</th><th>Check s（最小–最大）</th><th>Total s</th><th>改 1 行后 Check s</th></tr><tr><td>10</td><td>Drizzle 0.45.4</td><td>12,605</td><td>92,730</td><td>209</td><td>0.43（0.40-0.44）</td><td>1.12</td><td>0.05</td></tr><tr><td>10</td><td>Drizzle 1.0.0-rc.4</td><td>9,804</td><td>34,260</td><td>157</td><td>0.30（0.27-0.33）</td><td>0.96</td><td>0.10</td></tr><tr><td>10</td><td>Prisma 7.10.0</td><td>4,297</td><td>9,985</td><td>151</td><td>0.17（0.16-0.19）</td><td>0.70</td><td>0.03</td></tr><tr><td>50</td><td>Drizzle 0.45.4</td><td>40,177</td><td>398,447</td><td>285</td><td>1.10（1.04-1.11）</td><td>1.77</td><td>0.08</td></tr><tr><td>50</td><td>Drizzle 1.0.0-rc.4</td><td>17,116</td><td>72,345</td><td>196</td><td>0.41（0.41-0.44）</td><td>1.00</td><td>0.17</td></tr><tr><td>50</td><td>Prisma 7.10.0</td><td>7,300</td><td>20,133</td><td>269</td><td>0.21（0.20-0.22）</td><td>1.02</td><td>0.05</td></tr><tr><td>100</td><td>Drizzle 0.45.4</td><td>73,027</td><td>759,547</td><td>315</td><td>1.75（1.74-1.79）</td><td>2.44</td><td>0.08</td></tr><tr><td>100</td><td>Drizzle 1.0.0-rc.4</td><td>20,666</td><td>84,945</td><td>200</td><td>0.51（0.50-0.51）</td><td>1.09</td><td>0.15</td></tr><tr><td>100</td><td>Prisma 7.10.0</td><td>7,650</td><td>20,383</td><td>453</td><td>0.28（0.26-0.29）</td><td>1.40</td><td>0.05</td></tr><tr><td>200</td><td>Drizzle 0.45.4</td><td>138,727</td><td>1,481,747</td><td>496</td><td>3.39（3.38-3.53）</td><td>4.12</td><td>0.09</td></tr><tr><td>200</td><td>Drizzle 1.0.0-rc.4</td><td>27,766</td><td>110,145</td><td>215</td><td>0.74（0.69-0.75）</td><td>1.36</td><td>0.16</td></tr><tr><td>200</td><td>Prisma 7.10.0</td><td>8,350</td><td>20,883</td><td>861</td><td>0.27（0.24-0.29）</td><td>2.36</td><td>0.05</td></tr></table>
+<p>[图片：chart-01.png]</p>
+<p><strong>社区报告（2024-10 至 2026-10）：</strong>"已抓取"表示已读取原页面。"仅搜索摘要"表示只读取了搜索结果摘录，原页面未读取。</p>
+<table><tr><th>日期（UTC）</th><th>来源</th><th>摘录</th><th>状态</th><th>读取方式</th></tr>
+<tr><td>2025-02-24、2025-04-17、2025-11-20 的评论</td><td><a href="https://github.com/drizzle-team/drizzle-orm/issues/800">drizzle-orm #800</a></td><td>"My schema file is around 100 lines with 10 tables, but it's incredibly slow"；"too slow… I had to cut back to prisma"；"60 tables… intellisense take about 10s"，改用 tsgo 后约 500ms</td><td>closed（2023-08 关闭）；关闭后仍有新报告</td><td>已抓取</td></tr>
+<tr><td>2025-03-01</td><td><a href="https://github.com/drizzle-team/drizzle-orm/issues/4199">drizzle-orm #4199</a></td><td>"Drizzle's type inferrence starts breaking down once you have too many tables"（25 张表）</td><td>closed（2026-01-03），在 v1 beta 修复</td><td>仅搜索摘要</td></tr>
+<tr><td>未确认</td><td><a href="https://github.com/drizzle-team/drizzle-orm/issues/4841">drizzle-orm #4841</a>（维护者路线图）</td><td>"improved type performance by ~21.4x… TS v5.9.2: 553.7k -&gt; 25.4k"</td><td>已进入 1.0 beta / rc</td><td>仅搜索摘要</td></tr>
+<tr><td>2026-01-17</td><td><a href="https://github.com/drizzle-team/drizzle-orm/issues/5272">drizzle-orm #5272</a></td><td>200 多张表在 1.0.0-beta.9 报 TS7056</td><td>closed（2026-02-04），beta.14 修复</td><td>仅搜索摘要</td></tr>
+<tr><td>2026-09-28</td><td><a href="https://github.com/drizzle-team/drizzle-orm/issues/6391">drizzle-orm #6391</a></td><td>"0.45.x: <code>$inferInsert</code> cost is quadratic in column count (TS2589 at 424 columns); fixed in 1.0"</td><td>open</td><td>已抓取</td></tr>
+<tr><td>未确认</td><td><a href="https://www.reddit.com/r/typescript/comments/1o2aq5c/how_do_you_debug_typescript_autocomplete_slowness/">r/typescript</a></td><td>"up to 2min autocomplete times just using drizzle and zod"</td><td>讨论帖</td><td>仅搜索摘要</td></tr>
+<tr><td>2026-01-08</td><td><a href="https://github.com/prisma/prisma/issues/29011">prisma #29011</a></td><td>Prisma 6 → 7.2："Type Instantiations 11,441,158 → 30,242,287"</td><td>closed，由 PR #29592 修复</td><td>已抓取</td></tr>
+<tr><td>未确认</td><td><a href="https://github.com/prisma/prisma/pull/29592">prisma PR #29592</a></td><td>406 个 model："Check time 16.97s → 2.47s"</td><td>merged</td><td>仅搜索摘要</td></tr>
+<tr><td>2026-07-21</td><td><a href="https://github.com/prisma/prisma/releases/tag/7.9.0">Prisma 7.9.0</a></td><td>"Fixed a severe TypeScript performance regression introduced in Prisma 7"</td><td>已发布；7.10.0 包含该修复</td><td>已抓取</td></tr>
+<tr><td>未确认</td><td><a href="https://www.prisma.io/docs/orm/v7/more/troubleshooting/typescript-performance">Prisma 文档</a></td><td>建议用 <code>typeof client</code> 代替 <code>PrismaClient</code> 类型</td><td>官方建议</td><td>仅搜索摘要</td></tr>
+</table>
+<p><strong>对选型的影响：</strong>选 Prisma 时，版本不得低于 7.9.0（7.0–7.8 有类型性能回归）。选 Drizzle 并且 schema 预计超过 50 张表时，必须评估 1.0 rc 或等待 1.0 正式版。</p>
+<p><strong>局限：</strong></p>
+<ul>
+<li>未验证：编辑器（tsserver）的补全延迟。本次只测量 <code>tsc</code>。</li>
+<li>未验证：drizzle-zod、tRPC、NestJS DTO 的叠加影响。社区中的严重案例大多包含这些库。</li>
+<li>schema 是合成的：列数固定，关系是链状加一个中心表。真实 schema 的结果可能不同。</li>
+<li>未验证：数百列的宽表、tsgo（TypeScript 7）、MikroORM。</li>
+</ul>
+<p>原始输出：<code>raw/ts-perf/</code>。脚本：<code>scripts/ts-perf-gen.py</code>、<code>scripts/ts-perf-run.sh</code>、<code>scripts/ts-perf-summary.py</code>。</p>
+<details><summary>证据截图（原始终端输出，未编辑）</summary><p>[图片：10-ts-typecheck-summary.png]</p><p>10-ts-typecheck-summary.png（对照表见 EVIDENCE.md）</p></details><h2>3. Non-functional requirements（非功能需求）</h2>
+<h3>3.1 读写分离（需求 §5：在 ORM 层统一配置一次）</h3>
+<p>已验证：三个 ORM 都满足要求。</p>
+<p>检查方法：</p>
+<ol>
+<li>在 primary 和 replica 上开启 <code>log_statement=all</code>。</li>
+<li>在每个操作前后各执行一条 marker 查询。</li>
+<li>按 <code>application_name</code> 统计每条 SQL 所在的服务器。</li>
+</ol>
+<p>MikroORM 不转发 URL 中的 <code>application_name</code>，日志中显示为 <code>[unknown]</code>。测试期间只有 MikroORM 的会话没有名称，所以这些会话属于 MikroORM。</p>
+<table><tr><th>操作</th><th>Prisma + extension-read-replicas</th><th>Drizzle withReplicas</th><th>MikroORM replicas</th></tr>
+<tr><td>分页查询</td><td data-background="#E3FCEF">replica</td><td data-background="#E3FCEF">replica</td><td data-background="#E3FCEF">replica</td></tr>
+<tr><td>聚合统计</td><td data-background="#E3FCEF">replica</td><td data-background="#E3FCEF">replica</td><td data-background="#E3FCEF">replica</td></tr>
+<tr><td>单条插入</td><td data-background="#E3FCEF">primary</td><td data-background="#E3FCEF">primary</td><td data-background="#E3FCEF">primary；另有 begin/commit</td></tr>
+<tr><td>事务（检查 + 插入）</td><td data-background="#E3FCEF">primary；4 条语句都在 primary</td><td data-background="#E3FCEF">primary</td><td data-background="#E3FCEF">primary</td></tr>
+<tr><td>Raw SQL 路由</td><td>默认 primary；可以用 <code>$replica()</code> 指定 replica（来源：extension README）</td><td>可以用 <code>$primary</code> 指定 primary（来源：Drizzle 文档）。raw SQL 默认路由：未验证。</td><td>可以按查询设置 <code>connectionType</code>（来源：MikroORM 文档）</td></tr></table>
+<p>原始日志：<code>raw/08-routing-*.log</code>；汇总：<code>raw/08-routing-summary.txt</code>。</p>
+<details><summary>证据截图（原始终端输出，未编辑）</summary><p>[图片：08-read-write-routing.png]</p><p>08-read-write-routing.png（对照表见 EVIDENCE.md）</p></details><h3>3.2 AI agent 环境下的破坏性命令</h3>
+<p>已验证：在 AI coding agent 的 shell 中执行以下命令。目标都是一次性的复制库。</p>
+<table><tr><th>命令</th><th>结果</th></tr>
+<tr><td><code>prisma migrate reset --force</code></td><td data-background="#E3FCEF">命令被拒绝，exit code 为 1。输出："Prisma Migrate detected that it was invoked by …"。另设 <code>&lt;AI agent 环境变量&gt;=1</code> 时，Prisma 识别为 &lt;AI agent&gt;。数据保留：accounts 表仍有 2 行。</td></tr>
+<tr><td><code>drizzle-kit push --force</code>（数据库中多出一个有数据的列）</td><td data-background="#FFEBE6">命令直接执行，输出 "Changes applied"，exit code 为 0。有数据的列被删除。</td></tr>
+<tr><td><code>drizzle-kit push --strict</code>（没有 TTY）</td><td>输出 "Interactive prompts require a TTY"，没有修改数据库。exit code 为 0。</td></tr>
+<tr><td><code>mikro-orm schema:fresh --run</code></td><td data-background="#FFEBE6">命令直接执行，输出 "Schema successfully dropped and recreated"，exit code 为 0。accounts 表变为 0 行。</td></tr></table>
+<p>Prisma 文档的范围：文档只写了 <code>prisma migrate reset</code> 的 AI safety guardrail。该 guardrail 是软限制：设置 <code>PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION</code> 后，命令可以执行。</p>
+<p>MikroORM 文档的范围：<code>migrations.safe</code> 选项可以禁止 drop table 和 drop column。该选项默认为 <code>false</code>。</p>
+<p>原始输出：<code>raw/05-ai-guardrail.log</code>。Drizzle 的相关社区反馈见 GitHub issue #5307（§7）。</p>
+<details><summary>证据截图（原始终端输出，未编辑）</summary><p>[图片：02-prisma-migrate-reset-blocked.png]</p><p>02-prisma-migrate-reset-blocked.png（对照表见 EVIDENCE.md）</p><p>[图片：03-drizzle-push-force-data-loss.png]</p><p>03-drizzle-push-force-data-loss.png（对照表见 EVIDENCE.md）</p><p>[图片：04-mikro-schema-fresh-wipe.png]</p><p>04-mikro-schema-fresh-wipe.png（对照表见 EVIDENCE.md）</p></details><h3>3.3 性能</h3>
+<p>详细数据见 §5。</p>
+<ul>
+<li>ORM 自身开销（主键查询 p50）：Drizzle 0.111 ms；Prisma 0.195 ms；MikroORM 0.405 ms。</li>
+<li>10 并发分页吞吐：Drizzle 5,126 次/秒；Prisma 4,146 次/秒；MikroORM 1,023 次/秒。MikroORM 的 p50 是 8.9 ms。</li>
+<li>冷启动（打包后，进程启动到第一条结果，中位数）：Drizzle 66 ms；Prisma 195 ms；MikroORM 325 ms。</li>
+<li>benchmark 结束时的 RSS：Drizzle 约 201 MB；Prisma 约 346 MB；MikroORM 约 348 MB。</li>
+<li>打包体积（gzip）：Drizzle 77 KB；MikroORM 421 KB；Prisma 1753 KB。Prisma 未压缩为 4.99 MB，包含 query compiler wasm。</li>
+<li>重 SQL 查询（约 20 万行 group by）：三者都是 47–50 ms。这个场景的瓶颈是数据库。</li>
+</ul>
+<div data-type="panel-warning"><p><strong>cursor 查询不得只用 OR 条件，必须加冗余的 <code>created_at &lt;= c</code> 条件或用 row-value 比较。</strong>只用 OR 条件时，查询耗时 29.7 ms。这个结论与 ORM 选择无关。
+<ul>
+<li>只用 <code>created_at &lt; c OR (created_at = c AND id &lt; i)</code>：Index Cond 只有 tenant 和 parent；Filter 删除 98,798 行；耗时 29.7 ms。</li>
+<li>row-value <code>(created_at, id) &lt; (c, i)</code>：耗时 0.154 ms。</li>
+<li>OR 条件 + 冗余 <code>created_at &lt;= c</code>：耗时 0.077 ms。</li>
+</ul>
+三个 ORM 的 query API 都可以写冗余条件。本报告的 benchmark 都用「OR + 冗余条件」写法。来源：<code>raw/10-explain.txt</code>（单次 <code>EXPLAIN ANALYZE</code>）。</p></div>
+<details><summary>证据截图（原始终端输出，未编辑）</summary><p>[图片：07-cursor-explain.png]</p><p>07-cursor-explain.png（对照表见 EVIDENCE.md）</p></details><h2>4. Migration 测试</h2>
+<p>ASJ 的 <code>prisma/migrations</code> 有 8 个 migration，都是 MySQL。测试把其中 3 种改写为 PostgreSQL 版本（M1–M3）。M4 和 M5 是构造场景，team 仓库中没有对应的 migration。</p>
+<table><tr><th>场景</th><th>Prisma</th><th>Drizzle</th><th>MikroORM</th></tr>
+<tr><td>M1 加 NOT NULL 列，带默认值<br/>对应 add_language、add_reg_service</td><td data-background="#E3FCEF">自动生成；SQL 正确</td><td data-background="#E3FCEF">自动生成；SQL 正确</td><td data-background="#E3FCEF">自动生成；带 down()</td></tr>
+<tr><td>M2 unique index 改为普通 index<br/>对应 remove_session_unique_indexes</td><td data-background="#E3FCEF">DROP INDEX + CREATE INDEX</td><td data-background="#E3FCEF">DROP + CREATE（同名）</td><td data-background="#FFFAE6">SQL 正确；同时包含 2 个 expression index 的删除和重建（index churn）</td></tr>
+<tr><td>M3 加索引<br/>对应 add_referral_logs_index、add_device_id_index</td><td data-background="#E3FCEF">正确</td><td data-background="#E3FCEF">正确</td><td data-background="#FFFAE6">正确；同样包含 index churn</td></tr>
+<tr><td>M4 列改名 display_username → nickname（表中有 2 行数据）<br/>构造场景</td><td data-background="#FFFAE6">生成 DROP + ADD，并警告 "contains 2 non-null values"。没有 TTY 时拒绝执行，exit code 为 1。手写一行 <code>RENAME COLUMN</code> 后执行成功，数据保留。</td><td data-background="#FFFAE6">交互式询问 create 或 rename。没有 TTY 时报错，exit code 为 0。在 pty 中选择 rename 后，生成的 <code>RENAME COLUMN</code> 正确，数据保留。</td><td data-background="#E3FCEF">非交互；自动识别为 rename；生成 down()；数据保留</td></tr>
+<tr><td>M5 enum 加值 + 回填数据（自定义 SQL）<br/>构造场景</td><td data-background="#E3FCEF">生成 <code>ADD VALUE</code>。同一文件中追加 UPDATE 后，<code>migrate deploy</code> 成功。原因未确认：Prisma 是否用事务包装该 migration。确认方法：查看 PG statement 日志。</td><td data-background="#FFEBE6">同一文件：失败，报 "unsafe use of new value"。拆成两个 migration（<code>generate --custom</code>）后：成功。</td><td data-background="#FFEBE6">同一文件：失败。拆成两个 migration 后：仍然失败，因为默认 <code>allOrNothing</code> 把全部 migration 放在一个事务内。分两次执行 <code>migration:up --to</code> 后：成功。生成的 <code>ADD VALUE</code> 重复一次；down() 中没有对应回滚。</td></tr>
+<tr><td>Drift 检测（手工在数据库中加一列）</td><td data-background="#E3FCEF"><code>migrate diff --exit-code</code> 返回 2，并输出修复 SQL。<code>migrate status</code> 只检查 migration 历史，不检查 schema。</td><td data-background="#FFEBE6"><code>drizzle-kit check</code> 输出 "Everything's fine"。该命令只检查 migration 文件之间的冲突。<code>push --strict</code> 显示差异，但必须有 TTY。</td><td data-background="#FFFAE6"><code>migration:check</code> 返回 exit code 1。没有 drift 时，也返回 exit code 1（误报，原因是 index churn）。</td></tr>
+<tr><td>Down migration</td><td data-background="#FFFAE6">不生成 down。修复方式：roll-forward 或 <code>migrate resolve</code>。</td><td data-background="#FFFAE6">不生成 down</td><td data-background="#FFFAE6">生成 down()。M2–M5 的 down() 引用不存在的索引名 <code>comments_index</code> 和 <code>comments_unique</code>，<code>migration:down</code> 失败。手工删除这些行后，M4 回滚成功。</td></tr>
+<tr><td>生成的 SQL 质量</td><td>格式清楚；带注释；表名带 schema 前缀</td><td>格式清楚；用 <code>--&gt; statement-breakpoint</code> 分隔</td><td>普通变更正确；raw expression 索引在每个 migration 中都重建</td></tr></table>
+<p>MikroORM 的 index churn 与 down() 错误只出现在 raw expression 索引上。测试用 raw expression 定义 partial index 和 DESC index。换一种索引写法能否避免这两个问题：未确认。确认方法：用 MikroORM 的结构化 index 选项重新测试。</p>
+<p>原始日志：<code>raw/03-*-migrations.log</code>、<code>raw/04-drift.log</code>。生成的 migration 文件：<code>prisma/prisma/migrations</code>、<code>drizzle/drizzle</code>、<code>mikro/migrations</code>。</p>
+<details><summary>证据截图（原始终端输出，未编辑）</summary><p>[图片：01-prisma-rename-refusal.png]</p><p>01-prisma-rename-refusal.png（对照表见 EVIDENCE.md）</p><p>[图片：05-drizzle-rename-tty-exit0.png]</p><p>05-drizzle-rename-tty-exit0.png（对照表见 EVIDENCE.md）</p><p>[图片：06-enum-backfill.png]</p><p>06-enum-backfill.png（对照表见 EVIDENCE.md）</p></details><h2>5. Benchmarks</h2>
+<p><strong>共同条件：</strong></p>
+<ul>
+<li>硬件：8 vCPU，约 15 GB RAM。测试期间可用内存约 2 GB。</li>
+<li>PostgreSQL primary 和 replica 在同一台机器（127.0.0.1）。</li>
+<li>数据：2 个 tenant；51 个 resource；100 万条 comment，其中一个热门 resource 有 20 万条；10 万个 account。数据库大小 601 MB。</li>
+<li>每个 ORM 的连接池 max=10。</li>
+<li>每个 ORM 运行 3 轮。每轮轮换 ORM 的执行顺序。</li>
+<li>分页 cursor：预先计算 508 个，均匀分布在热门 resource 上。</li>
+</ul>
+<p>表中数字是 3 轮平均值。小字是 3 轮中的最小值到最大值。</p>
+<table><tr><th rowspan="2">场景</th><th colspan="3">Prisma 7.10</th><th colspan="3">Drizzle 0.45.4</th><th colspan="3">MikroORM 7.2.5</th></tr>
+<tr><th>p50 ms</th><th>p95 ms</th><th>ops/s</th><th>p50 ms</th><th>p95 ms</th><th>ops/s</th><th>p50 ms</th><th>p95 ms</th><th>ops/s</th></tr>
+<tr><td>cursor 分页（20 条，replica，串行 3000 次）</td><td>0.667<br/>0.648–0.702</td><td>1.028</td><td>1420</td><td>0.412<br/>0.409–0.418</td><td>0.740</td><td>2203</td><td>1.288<br/>1.248–1.325</td><td>2.022</td><td>719</td></tr><tr><td>cursor 分页（10 并发，5000 次）</td><td>1.884<br/>1.759–2.026</td><td>4.472</td><td>4146</td><td>1.576<br/>1.472–1.702</td><td>3.522</td><td>5126</td><td>8.900<br/>7.845–10.605</td><td>17.620</td><td>1023</td></tr><tr><td>按主键查 1 条（5000 次）— 最能体现 ORM 自身开销</td><td>0.195<br/>0.188–0.205</td><td>0.419</td><td>4166</td><td>0.111<br/>0.109–0.114</td><td>0.198</td><td>7824</td><td>0.405<br/>0.341–0.437</td><td>0.663</td><td>2342</td></tr><tr><td>单条插入（primary，2000 次）</td><td>0.563<br/>0.548–0.586</td><td>0.932</td><td>1568</td><td>0.256<br/>0.241–0.276</td><td>0.527</td><td>3294</td><td>0.661<br/>0.574–0.741</td><td>1.180</td><td>1316</td></tr><tr><td>批量插入 500 行（20 次）</td><td>87.510<br/>79.749–97.807</td><td>127.280</td><td>11</td><td>45.478<br/>40.532–54.009</td><td>69.622</td><td>22</td><td>45.046<br/>43.449–47.651</td><td>61.309</td><td>22</td></tr><tr><td>事务：检查 parent + 插入 reply（1000 次）</td><td>1.169<br/>1.087–1.269</td><td>1.898</td><td>729</td><td>0.582<br/>0.549–0.606</td><td>1.046</td><td>1440</td><td>1.597<br/>1.479–1.783</td><td>2.282</td><td>554</td></tr><tr><td>批量 upsert 1000 个 accounts（20 次）*</td><td>9.539<br/>7.103–11.689</td><td>13.280</td><td>106</td><td>48.990<br/>46.170–53.552</td><td>76.307</td><td>20</td><td>61.265<br/>58.819–64.247</td><td>98.449</td><td>16</td></tr><tr><td>聚合：按 status group by（约 20 万行，30 次）</td><td>49.806<br/>49.431–50.183</td><td>55.241</td><td>20</td><td>46.982<br/>46.286–48.189</td><td>54.520</td><td>21</td><td>49.101<br/>48.929–49.358</td><td>58.624</td><td>20</td></tr></table>
+<p>* 批量 upsert 的写法不等价。Prisma 没有 bulk upsert API，测试用 <code>$executeRaw</code> + <code>unnest</code>（3 个数组参数）。Drizzle 和 MikroORM 用各自的 ORM API，生成 1000 行 VALUES（约 6000 个参数）。Prisma 的 ORM 写法每批 457–790 ms（<code>raw/15-prisma-upsert-orm-path.txt</code>）。</p>
+<p>[图片：chart-02.png]</p><p>[图片：chart-03.png]</p><p>[图片：chart-04.png]</p><p>[图片：chart-05.png]</p><p>[图片：chart-06.png]</p><p>[图片：chart-07.png]</p><p>[图片：chart-08.png]</p>
+<details><summary>证据截图（原始终端输出，未编辑）</summary><p>[图片：09-bench-summary.png]</p><p>09-bench-summary.png（对照表见 EVIDENCE.md）</p></details><h3>冷启动</h3>
+<p>方法：用 esbuild 把测试脚本打包为单个文件，执行 <code>node dist/coldstart.mjs</code>。每个 ORM 执行 10 次。</p>
+<table><tr><th>ORM</th><th>wall ms 中位数（最小–最大）</th><th>init ms</th><th>第一条查询 ms</th><th>RSS MB</th></tr><tr><td>Prisma 7.10</td><td>195（180–223）</td><td>5.2</td><td>85.8</td><td>93</td></tr><tr><td>Drizzle 0.45.4</td><td>66（63–71）</td><td>1.2</td><td>12.6</td><td>51</td></tr><tr><td>MikroORM 7.2.5</td><td>325（305–386）</td><td>200.2</td><td>28.7</td><td>96</td></tr></table>
+<h2>6. 局限</h2>
+<ul>
+<li>primary 和 replica 在同一台机器，没有网络延迟。网络延迟对 ORM 差距占比的影响：未验证。</li>
+<li>测试期间机器上有其他进程，可用内存约 2 GB。3 轮之间有波动，例如 MikroORM 10 并发分页 p50 为 7.8–10.6 ms。每个场景只运行 3 轮，没有做显著性检验。</li>
+<li>轮次之间的 <code>VACUUM ANALYZE</code> 没有执行：命令写法导致 PostgreSQL 报 "VACUUM cannot run inside a transaction block"。插入测试写入另一个 resource，不写入分页使用的热门 resource。comments 表每轮增加约 3.9 万行（3 个 ORM × 13,000 行）。</li>
+<li>测试的版本：Prisma 7.10、Drizzle 0.45.4、MikroORM 7.2.5。没有测试 Prisma 6.x、Prisma 8 rc。Drizzle 1.0 rc 只测试了类型检查（§2.4），没有测试运行时。</li>
+<li>只测试了 PostgreSQL。team 现有仓库使用 MySQL。</li>
+<li>测试代码按各 ORM 的常用写法编写，不一定是最优写法。MikroORM 每次请求使用 <code>em.fork()</code>，并有 3 处 <code>as any</code>。这两点对 MikroORM 结果的影响：未确认。</li>
+<li>开发效率和 AI 生成代码的质量：没有量化。代码行数只是粗略指标。</li>
+<li>安装耗时：没有可靠数据，本报告不列出。node_modules 大小包含 NestJS 和 CLI，不代表生产镜像大小。</li>
+<li>M4 的 Prisma migration 目录是手写的。目录名时间戳用了 UTC+8，其他目录用 UTC，所以在新数据库上重放时顺序与创建顺序不同。该问题不影响本次结果。手写 migration 时，必须统一使用 UTC 时间戳。</li>
+</ul>
+<h2>7. 社区观点（节选）</h2>
+<ul>
+<li>Joseph Pire，<em>Drizzle vs Prisma in production: 12 months later</em>（2026-06）："<code>prisma migrate dev</code> is still the best migration tool I've used: shadow database, drift detection, clean history." 作者的新项目选择 Drizzle，理由是 "no codegen step… the SQL hitting the database is the SQL you read in the code."</li>
+<li>drizzle-orm issue #5307（状态：open）：一位用户写道 "<code>db:generate</code> blocks the agent on a TTY prompt, the agent has to escalate to the human"。2026-10-10 的评论写道 "still hasn't been fixed even in v1 rc"。</li>
+<li>Prisma CLI 文档：CLI 可以识别 AI coding agent 的调用；agent 执行破坏性操作时，文档给出的例子是 <code>prisma migrate reset --force</code>。</li>
+<li>MikroORM 文档：默认情况下 "all of them will be wrapped in one master transaction"。这一点与 M5 拆分后仍然失败的结果一致。</li>
+<li>PostgreSQL 17 文档："If ALTER TYPE ... ADD VALUE ... is executed inside a transaction block, the new value cannot be used until after the transaction has been committed."</li>
+</ul>
+<h2>参考来源</h2>
+<ul>
+<li>Prisma CLI reference，AI safety guardrails：<a href="https://www.prisma.io/docs/orm/reference/prisma-cli-reference#ai-safety-guardrails-for-prisma-migrate-reset">prisma.io/docs/…#ai-safety-guardrails-for-prisma-migrate-reset</a></li>
+<li>Upgrade to Prisma ORM 7：<a href="https://www.prisma.io/docs/orm/more/upgrade-guides/upgrading-versions/upgrading-to-prisma-7">prisma.io/docs/…/upgrading-to-prisma-7</a></li>
+<li>@prisma/extension-read-replicas 0.5.0 README（npm 包内文件）</li>
+<li>Drizzle Read Replicas：<a href="https://orm.drizzle.team/docs/read-replicas">orm.drizzle.team/docs/read-replicas</a></li>
+<li>MikroORM Read Replica Connections：<a href="https://mikro-orm.io/docs/read-connections">mikro-orm.io/docs/read-connections</a></li>
+<li>MikroORM Migrations：<a href="https://mikro-orm.io/docs/migrations">mikro-orm.io/docs/migrations</a></li>
+<li>PostgreSQL 17 ALTER TYPE：<a href="https://www.postgresql.org/docs/17/sql-altertype.html">postgresql.org/docs/17/sql-altertype.html</a></li>
+<li>drizzle-orm issue #5307：<a href="https://github.com/drizzle-team/drizzle-orm/issues/5307">github.com/drizzle-team/drizzle-orm/issues/5307</a></li>
+<li>Joseph Pire，Drizzle vs Prisma in production：<a href="https://josephpire.dev/en/blog/drizzle-vs-prisma-in-production/">josephpire.dev/…</a></li>
+<li>GitHub API、api.npmjs.org、<code>npm view</code>：<code>raw/11-ecosystem.txt</code></li>
+</ul>
+<p>测试代码：<code>prisma/src</code>、<code>drizzle/src</code>、<code>mikro/src</code>。benchmark harness：<code>common/bench.ts</code>。报告生成脚本：<code>build_report.py</code>。</p>
